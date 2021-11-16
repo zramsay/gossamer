@@ -513,6 +513,9 @@ func (cs *chainSync) setMode(mode chainSyncState) {
 // head block number, it would leave us in bootstrap mode forever
 // it would be better to have some sort of standard deviation calculation and discard any outliers (#1861)
 func (cs *chainSync) getTarget() *big.Int {
+	count := int64(0)
+	sum := big.NewInt(0)
+
 	cs.RLock()
 	defer cs.RUnlock()
 
@@ -522,13 +525,11 @@ func (cs *chainSync) getTarget() *big.Int {
 		return big.NewInt(2<<32 - 1)
 	}
 
-	// we are going to sort the data and remove the outliers then we will return the avg of all the valid elements
-	intArr := make([]*big.Int, 0, len(cs.peerState))
 	for _, ps := range cs.peerState {
-		intArr = append(intArr, ps.number)
+		sum = big.NewInt(0).Add(sum, ps.number)
+		count++
 	}
 
-	sum, count := removeOutliers(intArr)
 	return big.NewInt(0).Div(sum, big.NewInt(count))
 }
 
