@@ -81,14 +81,6 @@ The `importStateAction` function is defined in [`main.go`](main.go).
 - `--header` - path to a JSON file that describes the block header corresponding to the given state
 - `--state` - path to a JSON file that contains the key-value pairs with which to seed Gossamer storage
 
-### Export Subcommand
-
-The `export` subcommand transforms a genesis configuration and Gossamer state into a TOML configuration file. This
-subcommand invokes the `exportAction` function defined in [`export.go`](export.go).
-
-- `--config` - path to a TOML configuration file (e.g. those defined in [the `chain` directory](../../chain))
-- `--basepath` - path to the Gossamer data directory that defines the state to export
-
 ## Client Components
 
 In its default method of execution, Gossamer orchestrates a number of modular services that run

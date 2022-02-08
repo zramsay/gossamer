@@ -59,8 +59,8 @@ func TestFixFlagOrder(t *testing.T) {
 			err = updatedInitAction(ctx)
 			require.Nil(t, err)
 
-			updatedExportAction := FixFlagOrder(exportAction)
-			err = updatedExportAction(ctx)
+			updatedAccountAction := FixFlagOrder(accountAction)
+			err = updatedAccountAction(ctx)
 			require.Nil(t, err)
 		})
 	}

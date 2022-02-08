@@ -410,7 +410,7 @@ var (
 		BloomFilterSizeFlag,
 	}
 
-	// StartupFlags are flags that are valid for use with the root command and the export subcommand
+	// StartupFlags are flags that are valid for use with the root command
 	StartupFlags = []cli.Flag{
 		// keystore flags
 		KeyFlag,
@@ -472,12 +472,6 @@ var (
 		GenesisSpecFlag,
 		OutputSpecFlag,
 	}
-
-	// ExportFlags are the flags that are valid for use with the export subcommand
-	ExportFlags = append([]cli.Flag{
-		ForceFlag,
-		GenesisFlag,
-	}, append(GlobalFlags, StartupFlags...)...)
 
 	// AccountFlags are flags that are valid for use with the account subcommand
 	AccountFlags = []cli.Flag{

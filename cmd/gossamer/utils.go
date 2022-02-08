@@ -11,8 +11,10 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/ChainSafe/gossamer/dot"
+	ctoml "github.com/ChainSafe/gossamer/dot/config/toml"
 	"github.com/ChainSafe/gossamer/internal/log"
 	"github.com/urfave/cli"
 	terminal "golang.org/x/term"
@@ -113,4 +115,76 @@ func newTestConfigWithFile(t *testing.T) (*dot.Config, *os.File) {
 	tomlCfg := dotConfigToToml(cfg)
 	cfgFile := exportConfig(tomlCfg, filename)
 	return cfg, cfgFile
+}
+
+func dotConfigToToml(dcfg *dot.Config) *ctoml.Config {
+	cfg := &ctoml.Config{
+		Pprof: ctoml.PprofConfig{
+			Enabled:          dcfg.Pprof.Enabled,
+			ListeningAddress: dcfg.Pprof.Settings.ListeningAddress,
+			BlockRate:        dcfg.Pprof.Settings.BlockProfileRate,
+			MutexRate:        dcfg.Pprof.Settings.MutexProfileRate,
+		},
+	}
+
+	cfg.Global = ctoml.GlobalConfig{
+		Name:         dcfg.Global.Name,
+		ID:           dcfg.Global.ID,
+		BasePath:     dcfg.Global.BasePath,
+		LogLvl:       dcfg.Global.LogLvl.String(),
+		MetricsPort:  dcfg.Global.MetricsPort,
+		RetainBlocks: dcfg.Global.RetainBlocks,
+		Pruning:      string(dcfg.Global.Pruning),
+	}
+
+	cfg.Log = ctoml.LogConfig{
+		CoreLvl:           dcfg.Log.CoreLvl.String(),
+		SyncLvl:           dcfg.Log.SyncLvl.String(),
+		NetworkLvl:        dcfg.Log.NetworkLvl.String(),
+		RPCLvl:            dcfg.Log.RPCLvl.String(),
+		StateLvl:          dcfg.Log.StateLvl.String(),
+		RuntimeLvl:        dcfg.Log.RuntimeLvl.String(),
+		BlockProducerLvl:  dcfg.Log.BlockProducerLvl.String(),
+		FinalityGadgetLvl: dcfg.Log.FinalityGadgetLvl.String(),
+	}
+
+	cfg.Init = ctoml.InitConfig{
+		Genesis: dcfg.Init.Genesis,
+	}
+
+	cfg.Account = ctoml.AccountConfig{
+		Key:    dcfg.Account.Key,
+		Unlock: dcfg.Account.Unlock,
+	}
+
+	cfg.Core = ctoml.CoreConfig{
+		Roles:            dcfg.Core.Roles,
+		BabeAuthority:    dcfg.Core.BabeAuthority,
+		GrandpaAuthority: dcfg.Core.GrandpaAuthority,
+		GrandpaInterval:  uint32(dcfg.Core.GrandpaInterval / time.Second),
+	}
+
+	cfg.Network = ctoml.NetworkConfig{
+		Port:              dcfg.Network.Port,
+		Bootnodes:         dcfg.Network.Bootnodes,
+		ProtocolID:        dcfg.Network.ProtocolID,
+		NoBootstrap:       dcfg.Network.NoBootstrap,
+		NoMDNS:            dcfg.Network.NoMDNS,
+		DiscoveryInterval: int(dcfg.Network.DiscoveryInterval / time.Second),
+		MinPeers:          dcfg.Network.MinPeers,
+		MaxPeers:          dcfg.Network.MaxPeers,
+	}
+
+	cfg.RPC = ctoml.RPCConfig{
+		Enabled:    dcfg.RPC.Enabled,
+		External:   dcfg.RPC.External,
+		Port:       dcfg.RPC.Port,
+		Host:       dcfg.RPC.Host,
+		Modules:    dcfg.RPC.Modules,
+		WSPort:     dcfg.RPC.WSPort,
+		WS:         dcfg.RPC.WS,
+		WSExternal: dcfg.RPC.WSExternal,
+	}
+
+	return cfg
 }

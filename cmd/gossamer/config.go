@@ -201,49 +201,6 @@ func createBuildSpecConfig(ctx *cli.Context) (*dot.Config, error) {
 	return cfg, nil
 }
 
-// createExportConfig creates a new dot configuration from the provided flag values
-func createExportConfig(ctx *cli.Context) (*dot.Config, error) {
-	cfg := DefaultCfg() // start with default configuration
-	tomlCfg := &ctoml.Config{}
-
-	err := loadConfigFile(ctx, tomlCfg)
-	if err != nil {
-		logger.Errorf("failed to load toml configuration: %s", err)
-		return nil, err
-	}
-
-	// ensure configuration values match genesis and overwrite with genesis
-	updateDotConfigFromGenesisJSONRaw(*tomlCfg, cfg)
-
-	// set global configuration values
-	err = setDotGlobalConfig(ctx, tomlCfg, &cfg.Global)
-	if err != nil {
-		logger.Errorf("failed to set global node configuration: %s", err)
-		return nil, err
-	}
-
-	// set log config
-	err = setLogConfig(ctx, &ctoml.Config{}, &cfg.Global, &cfg.Log)
-	if err != nil {
-		logger.Errorf("failed to set log configuration: %s", err)
-		return nil, err
-	}
-
-	// set init configuration values
-	setDotInitConfig(ctx, tomlCfg.Init, &cfg.Init)
-
-	// set cli configuration values
-	setDotAccountConfig(ctx, tomlCfg.Account, &cfg.Account)
-	setDotCoreConfig(ctx, tomlCfg.Core, &cfg.Core)
-	setDotNetworkConfig(ctx, tomlCfg.Network, &cfg.Network)
-	setDotRPCConfig(ctx, tomlCfg.RPC, &cfg.RPC)
-
-	// set system info
-	setSystemInfoConfig(ctx, cfg)
-
-	return cfg, nil
-}
-
 type stringKVStore interface {
 	String(key string) (value string)
 }

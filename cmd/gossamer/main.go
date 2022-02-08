@@ -18,7 +18,6 @@ import (
 
 const (
 	accountCommandName       = "account"
-	exportCommandName        = "export"
 	initCommandName          = "init"
 	buildSpecCommandName     = "build-spec"
 	importRuntimeCommandName = "import-runtime"
@@ -31,18 +30,6 @@ var app = cli.NewApp()
 var logger log.LeveledLogger = log.NewFromGlobal(log.AddContext("pkg", "cmd"))
 
 var (
-	// exportCommand defines the "export" subcommand (ie, `gossamer export`)
-	exportCommand = cli.Command{
-		Action:    FixFlagOrder(exportAction),
-		Name:      exportCommandName,
-		Usage:     "Export configuration values to TOML configuration file",
-		ArgsUsage: "",
-		Flags:     ExportFlags,
-		Category:  "EXPORT",
-		Description: "The export command exports configuration values from " +
-			"the command flags to a TOML configuration file.\n" +
-			"\tUsage: gossamer export --config chain/test/config.toml --basepath ~/.gossamer/test",
-	}
 	// initCommand defines the "init" subcommand (ie, `gossamer init`)
 	initCommand = cli.Command{
 		Action:    FixFlagOrder(initAction),
@@ -132,7 +119,6 @@ func init() {
 	app.Author = "ChainSafe Systems 2019"
 	app.Version = "0.3.2"
 	app.Commands = []cli.Command{
-		exportCommand,
 		initCommand,
 		accountCommand,
 		buildSpecCommand,
