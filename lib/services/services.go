@@ -17,6 +17,14 @@ type Service interface {
 	Stop() error
 }
 
+// ServiceRegistryIFace interface to define methods for ServiceRegistry
+type ServiceRegistryIFace interface {
+	RegisterService(service Service)
+	StartAll()
+	StopAll()
+	Get(srvc interface{}) Service
+}
+
 // ServiceRegistry is a structure to manage core system Services
 type ServiceRegistry struct {
 	Services     map[reflect.Type]Service // map of types to service instances

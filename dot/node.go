@@ -41,13 +41,11 @@ var logger = log.NewFromGlobal(log.AddContext("pkg", "dot"))
 // Node is a container for all the components of a node.
 type Node struct {
 	Name          string
-	Services      *services.ServiceRegistry // registry of all node services
+	Services      services.ServiceRegistryIFace // registry of all node services
 	wg            sync.WaitGroup
 	started       chan struct{}
 	metricsServer *metrics.Server
 }
-
-//go:generate mockgen -source=node.go -destination=mock_node_builder_test.go -package=$GOPACKAGE
 
 type nodeBuilderIface interface {
 	nodeInitialised(string) error
@@ -221,10 +219,14 @@ func LoadGlobalNodeName(basepath string) (nodename string, err error) {
 
 // NewNode creates a node based on the given Config and key store.
 func NewNode(cfg *Config, ks *keystore.GlobalKeystore) (*Node, error) {
-	return newNode(cfg, ks, &nodeBuilder{})
+	serviceRegistryLogger := logger.New(log.AddContext("pkg", "services"))
+	return newNode(cfg, ks, &nodeBuilder{}, services.NewServiceRegistry(serviceRegistryLogger))
 }
 
-func newNode(cfg *Config, ks *keystore.GlobalKeystore, builder nodeBuilderIface) (*Node, error) {
+func newNode(cfg *Config,
+	ks *keystore.GlobalKeystore,
+	builder nodeBuilderIface,
+	serviceRegistry services.ServiceRegistryIFace) (*Node, error) {
 	// set garbage collection percent to 10%
 	// can be overwritten by setting the GOGC env variable, which defaults to 100
 	prev := debug.SetGCPercent(10)
@@ -389,10 +391,9 @@ func newNode(cfg *Config, ks *keystore.GlobalKeystore, builder nodeBuilderIface)
 	// close state service last
 	nodeSrvcs = append(nodeSrvcs, stateSrvc)
 
-	serviceRegistryLogger := logger.New(log.AddContext("pkg", "services"))
 	node := &Node{
 		Name:     cfg.Global.Name,
-		Services: services.NewServiceRegistry(serviceRegistryLogger),
+		Services: serviceRegistry,
 		started:  make(chan struct{}),
 	}
 
