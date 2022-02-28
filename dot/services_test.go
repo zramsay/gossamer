@@ -44,11 +44,11 @@ func Test_createBlockVerifier(t *testing.T) {
 	stateSrvc, err := nodeInstance.createStateService(cfg)
 	require.NoError(t, err)
 
-	stateSrvc.Block = &state.BlockState{}
-	stateSrvc.Epoch = &state.EpochState{}
+	stateSrvc.SetBlockState(&state.BlockState{})
+	stateSrvc.SetEpochState(&state.EpochState{})
 
 	type args struct {
-		st *state.Service
+		st state.Service
 	}
 	tests := []struct {
 		name string
@@ -58,7 +58,7 @@ func Test_createBlockVerifier(t *testing.T) {
 	}{
 		{
 			name: "nil BlockState test",
-			args: args{st: &state.Service{}},
+			args: args{st: stateSrvc},
 			err:  errors.New("cannot have nil EpochState"),
 		},
 		{
@@ -99,24 +99,21 @@ func Test_createRuntimeStorage(t *testing.T) {
 	stateSrvc, err := nodeInstance.createStateService(cfg)
 	require.NoError(t, err)
 
-	type args struct {
-		st *state.Service
-	}
 	tests := []struct {
-		name string
-		args args
-		want *runtime.NodeStorage
-		err  error
+		name         string
+		stateService state.Service
+		want         *runtime.NodeStorage
+		err          error
 	}{
 		{
-			name: "working example",
-			args: args{st: stateSrvc},
-			want: &runtime.NodeStorage{},
+			name:         "working example",
+			stateService: stateSrvc,
+			want:         &runtime.NodeStorage{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := nodeInstance.createRuntimeStorage(tt.args.st)
+			got, err := nodeInstance.createRuntimeStorage(tt.stateService)
 			assert.ErrorIs(t, err, tt.err)
 
 			if tt.want != nil {
@@ -144,7 +141,7 @@ func Test_createSystemService(t *testing.T) {
 
 	type args struct {
 		cfg       *types.SystemInfo
-		stateSrvc *state.Service
+		stateSrvc state.Service
 	}
 	tests := []struct {
 		name string
@@ -217,7 +214,7 @@ func Test_nodeBuilder_createBABEService(t *testing.T) {
 
 	type args struct {
 		cfg             *Config
-		st              *state.Service
+		st              state.Service
 		ks              keystore.Keystore
 		cs              *core.Service
 		telemetryMailer telemetry.Client
@@ -254,7 +251,7 @@ func Test_nodeBuilder_createBABEService(t *testing.T) {
 	}
 }
 
-func newStateService(t *testing.T) *state.Service {
+func newStateService(t *testing.T) state.Service {
 	ctrl := gomock.NewController(t)
 	telemetryMock := NewMockClient(ctrl)
 	telemetryMock.EXPECT().SendMessage(gomock.Any()).AnyTimes()
@@ -282,17 +279,17 @@ func newStateService(t *testing.T) *state.Service {
 		Randomness:         [32]byte{},
 		SecondarySlots:     0,
 	}
-	epochState, err := state.NewEpochStateFromGenesis(stateSrvc.DB(), stateSrvc.Block, genesisBABEConfig)
+	epochState, err := state.NewEpochStateFromGenesis(stateSrvc.DB(), stateSrvc.BlockState(), genesisBABEConfig)
 	require.NoError(t, err)
 
-	stateSrvc.Epoch = epochState
+	stateSrvc.SetEpochState(epochState)
 
 	rtCfg := &wasmer.Config{}
 
 	rtCfg.Storage, err = rtstorage.NewTrieState(genTrie)
 	require.NoError(t, err)
 
-	rtCfg.CodeHash, err = stateSrvc.Storage.LoadCodeHash(nil)
+	rtCfg.CodeHash, err = stateSrvc.StorageState().LoadCodeHash(nil)
 	require.NoError(t, err)
 
 	rtCfg.NodeStorage = runtime.NodeStorage{}
@@ -300,7 +297,7 @@ func newStateService(t *testing.T) *state.Service {
 	rt, err := wasmer.NewRuntimeFromGenesis(rtCfg)
 	require.NoError(t, err)
 
-	stateSrvc.Block.StoreRuntime(stateSrvc.Block.BestBlockHash(), rt)
+	stateSrvc.BlockState().StoreRuntime(stateSrvc.BlockState().BestBlockHash(), rt)
 
 	return stateSrvc
 }
@@ -319,7 +316,7 @@ func Test_nodeBuilder_createCoreService(t *testing.T) {
 	type args struct {
 		cfg *Config
 		ks  *keystore.GlobalKeystore
-		st  *state.Service
+		st  state.Service
 		net *network.Service
 		dh  *digest.Handler
 	}
@@ -363,7 +360,7 @@ func Test_nodeBuilder_createNetworkService(t *testing.T) {
 	stateSrvc := newStateService(t)
 	type args struct {
 		cfg             *Config
-		stateSrvc       *state.Service
+		stateSrvc       state.Service
 		telemetryMailer telemetry.Client
 	}
 	tests := []struct {
@@ -403,7 +400,7 @@ func Test_nodeBuilder_createRPCService(t *testing.T) {
 
 	type args struct {
 		cfg       *Config
-		stateSrvc *state.Service
+		stateSrvc state.Service
 	}
 	tests := []struct {
 		name string
@@ -451,14 +448,14 @@ func Test_nodeBuilder_createGRANDPAService(t *testing.T) {
 
 	networkConfig := &network.Config{
 		BasePath:   t.TempDir(),
-		BlockState: stateSrvc.Block,
+		BlockState: stateSrvc.BlockState(),
 		RandSeed:   2,
 	}
 	networkSrvc, err := network.NewService(networkConfig)
 	require.NoError(t, err)
 	type args struct {
 		cfg *Config
-		st  *state.Service
+		st  state.Service
 		ks  keystore.Keystore
 		net *network.Service
 	}
@@ -499,7 +496,7 @@ func Test_createRuntime(t *testing.T) {
 	t.Parallel()
 	cfg := NewTestConfig(t)
 	stateSrvc := newStateService(t)
-	code, err := stateSrvc.Storage.LoadCode(nil)
+	code, err := stateSrvc.StorageState().LoadCode(nil)
 	require.NoError(t, err)
 
 	cfgLife := NewTestConfig(t)
@@ -508,7 +505,7 @@ func Test_createRuntime(t *testing.T) {
 	type args struct {
 		cfg  *Config
 		ns   runtime.NodeStorage
-		st   *state.Service
+		st   state.Service
 		code []byte
 	}
 	tests := []struct {
@@ -560,7 +557,7 @@ func Test_nodeBuilder_newSyncService(t *testing.T) {
 	finalityGadget := &grandpa.Service{}
 	type args struct {
 		cfg             *Config
-		st              *state.Service
+		st              state.Service
 		fg              sync.FinalityGadget
 		verifier        *babe.VerificationManager
 		cs              *core.Service
@@ -607,7 +604,7 @@ func Test_nodeBuilder_createDigestHandler(t *testing.T) {
 	stateSrvc := newStateService(t)
 	type args struct {
 		lvl log.Level
-		st  *state.Service
+		st  state.Service
 	}
 	tests := []struct {
 		name string

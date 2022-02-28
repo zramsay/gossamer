@@ -5,6 +5,8 @@ package state
 
 import (
 	"fmt"
+	"github.com/ChainSafe/gossamer/lib/common"
+	"github.com/ChainSafe/gossamer/lib/genesis"
 	"math/big"
 	"path/filepath"
 
@@ -25,7 +27,26 @@ var logger = log.NewFromGlobal(
 )
 
 type Service interface {
+	UseMemDB()
+	DB() chaindb.Database
 	SetupBase() error
+	Start() error
+	Rewind(toBlock int64) error
+	Stop() error
+	Import(header *types.Header, t *trie.Trie, firstSlot uint64) error
+	StorageEntries(root *common.Hash) (map[string][]byte, error)
+	Initialise(gen *genesis.Genesis, header *types.Header, t *trie.Trie) error
+	BlockState() *BlockState
+	StorageState() *StorageState
+	TransactionState() *TransactionState
+	EpochState() *EpochState
+	GrandpaState() *GrandpaState
+	BaseState() *BaseState
+
+	// This is required at the moment since we are modifying internal state of the attributes
+	// in the service.  TODO: Find references to these functions and add these as params to constructor?
+	SetBlockState(state *BlockState)
+	SetEpochState(state *EpochState)
 	SetTelemetryClient(client telemetry.Client)
 }
 
@@ -53,8 +74,32 @@ type service struct {
 	BabeThresholdDenominator uint64
 }
 
+func (s *service) BaseState() *BaseState {
+	return s.Base
+}
+func (s *service) BlockState() *BlockState {
+	return s.Block
+}
+func (s *service) StorageState() *StorageState {
+	return s.Storage
+}
+func (s *service) TransactionState() *TransactionState {
+	return s.Transaction
+}
+func (s *service) EpochState() *EpochState {
+	return s.Epoch
+}
+func (s *service) GrandpaState() *GrandpaState {
+	return s.Grandpa
+}
 func (s *service) SetTelemetryClient(client telemetry.Client) {
 	s.Telemetry = client
+}
+func (s *service) SetEpochState(epochState *EpochState) {
+	s.Epoch = epochState
+}
+func (s *service) SetBlockState(blockState *BlockState) {
+	s.Block = blockState
 }
 
 // Config is the default configuration used by state service.
@@ -81,6 +126,10 @@ func NewService(config Config) Service {
 		PrunerCfg: config.PrunerCfg,
 		Telemetry: config.Telemetry,
 	}
+}
+
+func (s *service) StorageEntries(root *common.Hash) (map[string][]byte, error) {
+	return s.Storage.Entries(root)
 }
 
 // UseMemDB tells the service to use an in-memory key-value store instead of a persistent database.

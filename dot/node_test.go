@@ -103,6 +103,7 @@ func TestLoadGlobalNodeName(t *testing.T) {
 }
 
 //go:generate mockgen -source=../lib/services/services.go -destination=mock_service_registry_test.go -package=$GOPACKAGE
+//go:generate mockgen -source=node.go -destination=mock_node_builder_test.go -package=$GOPACKAGE
 
 func TestNewNode(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -180,35 +181,36 @@ func TestNewNode(t *testing.T) {
 		return stateSrvc, nil
 	})
 
+	stateSrvc := state.NewService(state.Config{})
 	m.EXPECT().createRuntimeStorage(gomock.AssignableToTypeOf(stateSrvc)).Return(&runtime.
 		NodeStorage{}, nil)
-	m.EXPECT().loadRuntime(dotConfig, &runtime.NodeStorage{}, gomock.AssignableToTypeOf(&state.Service{}),
+	m.EXPECT().loadRuntime(dotConfig, &runtime.NodeStorage{}, gomock.AssignableToTypeOf(stateSrvc),
 		ks, gomock.AssignableToTypeOf(&network.Service{})).Return(nil)
-	m.EXPECT().createBlockVerifier(gomock.AssignableToTypeOf(&state.Service{})).Return(&babe.
+	m.EXPECT().createBlockVerifier(gomock.AssignableToTypeOf(stateSrvc)).Return(&babe.
 		VerificationManager{}, nil)
-	m.EXPECT().createDigestHandler(log.Critical, gomock.AssignableToTypeOf(&state.Service{})).
+	m.EXPECT().createDigestHandler(log.Critical, gomock.AssignableToTypeOf(stateSrvc)).
 		Return(&digest.Handler{}, nil)
-	m.EXPECT().createCoreService(dotConfig, ks, gomock.AssignableToTypeOf(&state.Service{}),
+	m.EXPECT().createCoreService(dotConfig, ks, gomock.AssignableToTypeOf(stateSrvc),
 		gomock.AssignableToTypeOf(&network.Service{}), &digest.Handler{}).
 		Return(&core.Service{}, nil)
-	m.EXPECT().createGRANDPAService(dotConfig, gomock.AssignableToTypeOf(&state.Service{}),
+	m.EXPECT().createGRANDPAService(dotConfig, gomock.AssignableToTypeOf(stateSrvc),
 		&digest.Handler{}, ks.Gran, gomock.AssignableToTypeOf(&network.Service{}),
 		gomock.AssignableToTypeOf(&telemetry.Mailer{})).
 		Return(&grandpa.Service{}, nil)
-	m.EXPECT().newSyncService(dotConfig, gomock.AssignableToTypeOf(&state.Service{}), &grandpa.Service{},
+	m.EXPECT().newSyncService(dotConfig, gomock.AssignableToTypeOf(stateSrvc), &grandpa.Service{},
 		&babe.VerificationManager{}, &core.Service{}, gomock.AssignableToTypeOf(&network.Service{}),
 		gomock.AssignableToTypeOf(&telemetry.Mailer{})).
 		Return(&dotsync.Service{}, nil)
-	m.EXPECT().createBABEService(dotConfig, gomock.AssignableToTypeOf(&state.Service{}), ks.Babe,
+	m.EXPECT().createBABEService(dotConfig, gomock.AssignableToTypeOf(stateSrvc), ks.Babe,
 		&core.Service{}, gomock.AssignableToTypeOf(&telemetry.Mailer{})).
 		Return(&babe.Service{}, nil)
-	m.EXPECT().createSystemService(&dotConfig.System, gomock.AssignableToTypeOf(&state.Service{})).
-		DoAndReturn(func(cfg *types.SystemInfo, stateSrvc *state.Service) (*system.Service, error) {
-			gd, err := stateSrvc.Base.LoadGenesisData()
+	m.EXPECT().createSystemService(&dotConfig.System, gomock.AssignableToTypeOf(stateSrvc)).
+		DoAndReturn(func(cfg *types.SystemInfo, stateSrvc state.Service) (*system.Service, error) {
+			gd, err := stateSrvc.BaseState().LoadGenesisData()
 			systemService := system.NewService(cfg, gd)
 			return systemService, err
 		})
-	m.EXPECT().createNetworkService(dotConfig, gomock.AssignableToTypeOf(&state.Service{}),
+	m.EXPECT().createNetworkService(dotConfig, gomock.AssignableToTypeOf(stateSrvc),
 		gomock.AssignableToTypeOf(&telemetry.Mailer{})).Return(testNetworkService, nil)
 
 	got, err := newNode(dotConfig, ks, m, mockServiceRegistry)
@@ -364,7 +366,7 @@ func Test_nodeBuilder_loadRuntime(t *testing.T) {
 	type args struct {
 		cfg       *Config
 		ns        *runtime.NodeStorage
-		stateSrvc *state.Service
+		stateSrvc state.Service
 		ks        *keystore.GlobalKeystore
 		net       *network.Service
 	}

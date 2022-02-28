@@ -33,7 +33,8 @@ func newTestConfigWithFile(t *testing.T) (*Config, *os.File) {
 
 // newTestGenesisFile returns a human-readable test genesis file using "gssmr" human readable data
 func newTestGenesisFile(t *testing.T, cfg *Config) (filename string) {
-	fp := utils.GetGssmrGenesisPath()
+	fp, err := utils.GetGssmrGenesisPath()
+	require.NoError(t, err)
 
 	gssmrGen, err := genesis.NewGenesisFromJSON(fp, 0)
 	require.NoError(t, err)
@@ -542,7 +543,8 @@ func NewTestConfig(t *testing.T) *Config {
 
 // NewTestGenesis returns a test genesis instance using "gssmr" raw data
 func NewTestGenesis(t *testing.T) *genesis.Genesis {
-	fp := utils.GetGssmrGenesisRawPath()
+	fp, err := utils.GetGssmrGenesisRawPath()
+	require.NoError(t, err)
 
 	gssmrGen, err := genesis.NewGenesisFromJSONRaw(fp)
 	require.NoError(t, err)
@@ -560,7 +562,8 @@ func NewTestGenesis(t *testing.T) *genesis.Genesis {
 func newTestGenesisRawFile(t *testing.T, cfg *Config) (filename string) {
 	filename = filepath.Join(t.TempDir(), "genesis.json")
 
-	fp := utils.GetGssmrGenesisRawPath()
+	fp, err := utils.GetGssmrGenesisRawPath()
+	require.NoError(t, err)
 
 	gssmrGen, err := genesis.NewGenesisFromJSONRaw(fp)
 	require.Nil(t, err)

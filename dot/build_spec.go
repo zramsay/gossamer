@@ -121,7 +121,7 @@ func BuildFromDB(path string) (*BuildSpec, error) {
 		return nil, fmt.Errorf("cannot start state service: %w", err)
 	}
 	// set genesis fields data
-	ent, err := stateSrvc.Storage.Entries(nil)
+	ent, err := stateSrvc.StorageEntries(nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get storage trie entries: %w", err)
 	}
