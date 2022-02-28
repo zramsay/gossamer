@@ -24,8 +24,15 @@ var logger = log.NewFromGlobal(
 	log.AddContext("pkg", "state"),
 )
 
+type Service interface {
+	SetupBase() error
+	SetTelemetryClient(client telemetry.Client)
+}
+
+var _ Service = &service{}
+
 // Service is the struct that holds storage, block and network states
-type Service struct {
+type service struct {
 	dbPath      string
 	logLvl      log.Level
 	db          chaindb.Database
@@ -46,6 +53,10 @@ type Service struct {
 	BabeThresholdDenominator uint64
 }
 
+func (s *service) SetTelemetryClient(client telemetry.Client) {
+	s.Telemetry = client
+}
+
 // Config is the default configuration used by state service.
 type Config struct {
 	Path      string
@@ -56,10 +67,10 @@ type Config struct {
 }
 
 // NewService create a new instance of Service
-func NewService(config Config) *Service {
+func NewService(config Config) Service {
 	logger.Patch(log.SetLevel(config.LogLevel))
 
-	return &Service{
+	return &service{
 		dbPath:    config.Path,
 		logLvl:    config.LogLevel,
 		db:        nil,
@@ -75,18 +86,18 @@ func NewService(config Config) *Service {
 // UseMemDB tells the service to use an in-memory key-value store instead of a persistent database.
 // This should be called after NewService, and before Initialise.
 // This should only be used for testing.
-func (s *Service) UseMemDB() {
+func (s *service) UseMemDB() {
 	s.isMemDB = true
 }
 
 // DB returns the Service's database
-func (s *Service) DB() chaindb.Database {
+func (s *service) DB() chaindb.Database {
 	return s.db
 }
 
 // SetupBase intitializes state.Base property with
 // the instance of a chain.NewBadger database
-func (s *Service) SetupBase() error {
+func (s *service) SetupBase() error {
 	if s.isMemDB {
 		return nil
 	}
@@ -109,7 +120,7 @@ func (s *Service) SetupBase() error {
 }
 
 // Start initialises the Storage database and the Block database.
-func (s *Service) Start() error {
+func (s *service) Start() error {
 	if !s.isMemDB && (s.Storage != nil || s.Block != nil || s.Epoch != nil || s.Grandpa != nil) {
 		return nil
 	}
@@ -176,7 +187,7 @@ func (s *Service) Start() error {
 
 // Rewind rewinds the chain to the given block number.
 // If the given number of blocks is greater than the chain height, it will rewind to genesis.
-func (s *Service) Rewind(toBlock int64) error {
+func (s *service) Rewind(toBlock int64) error {
 	num, _ := s.Block.BestBlockNumber()
 	if toBlock > num.Int64() {
 		return fmt.Errorf("cannot rewind, given height is higher than our current height")
@@ -252,7 +263,7 @@ func (s *Service) Rewind(toBlock int64) error {
 }
 
 // Stop closes each state database
-func (s *Service) Stop() error {
+func (s *service) Stop() error {
 	close(s.closeCh)
 
 	hash, err := s.Block.GetHighestFinalisedHash()
@@ -271,7 +282,7 @@ func (s *Service) Stop() error {
 
 // Import imports the given state corresponding to the given header and sets the head of the chain
 // to it. Additionally, it uses the first slot to correctly set the epoch number of the block.
-func (s *Service) Import(header *types.Header, t *trie.Trie, firstSlot uint64) error {
+func (s *service) Import(header *types.Header, t *trie.Trie, firstSlot uint64) error {
 	var err error
 	// initialise database using data directory
 	s.db, err = utils.SetupDatabase(s.dbPath, s.isMemDB)

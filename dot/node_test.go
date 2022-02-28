@@ -150,7 +150,7 @@ func TestNewNode(t *testing.T) {
 
 	m := NewMocknodeBuilderIface(ctrl)
 	m.EXPECT().nodeInitialised(dotConfig.Global.BasePath).Return(nil)
-	m.EXPECT().createStateService(dotConfig).DoAndReturn(func(cfg *Config) (*state.Service, error) {
+	m.EXPECT().createStateService(dotConfig).DoAndReturn(func(cfg *Config) (state.Service, error) {
 		stateSrvc := state.NewService(config)
 		// create genesis from configuration file
 		gen, err := genesis.NewGenesisFromJSONRaw(cfg.Init.Genesis)
@@ -167,7 +167,7 @@ func TestNewNode(t *testing.T) {
 		if err != nil {
 			return nil, fmt.Errorf("failed to create genesis block from trie: %w", err)
 		}
-		stateSrvc.Telemetry = mockTelemetryClient
+		stateSrvc.SetTelemetryClient(mockTelemetryClient)
 		err = stateSrvc.Initialise(gen, header, trie)
 		if err != nil {
 			return nil, fmt.Errorf("failed to initialise state service: %s", err)
@@ -180,7 +180,7 @@ func TestNewNode(t *testing.T) {
 		return stateSrvc, nil
 	})
 
-	m.EXPECT().createRuntimeStorage(gomock.AssignableToTypeOf(&state.Service{})).Return(&runtime.
+	m.EXPECT().createRuntimeStorage(gomock.AssignableToTypeOf(stateSrvc)).Return(&runtime.
 		NodeStorage{}, nil)
 	m.EXPECT().loadRuntime(dotConfig, &runtime.NodeStorage{}, gomock.AssignableToTypeOf(&state.Service{}),
 		ks, gomock.AssignableToTypeOf(&network.Service{})).Return(nil)
