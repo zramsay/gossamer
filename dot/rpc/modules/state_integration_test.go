@@ -518,7 +518,7 @@ func setupStateModule(t *testing.T) (*StateModule, *common.Hash, *common.Hash) {
 	net := newNetworkService(t)
 	chain := newTestStateService(t)
 	// init storage with test data
-	ts, err := chain.Storage.TrieState(nil)
+	ts, err := chain.StorageState().TrieState(nil)
 	require.NoError(t, err)
 
 	ts.Set([]byte(`:key2`), []byte(`value2`))
@@ -527,7 +527,7 @@ func setupStateModule(t *testing.T) (*StateModule, *common.Hash, *common.Hash) {
 
 	sr1, err := ts.Root()
 	require.NoError(t, err)
-	err = chain.Storage.StoreTrie(ts, nil)
+	err = chain.StorageState().StoreTrie(ts, nil)
 	require.NoError(t, err)
 
 	digest := types.NewDigest()
@@ -538,7 +538,7 @@ func setupStateModule(t *testing.T) (*StateModule, *common.Hash, *common.Hash) {
 
 	b := &types.Block{
 		Header: types.Header{
-			ParentHash: chain.Block.BestBlockHash(),
+			ParentHash: chain.BlockState().BestBlockHash(),
 			Number:     big.NewInt(3),
 			StateRoot:  sr1,
 			Digest:     digest,
@@ -546,17 +546,17 @@ func setupStateModule(t *testing.T) (*StateModule, *common.Hash, *common.Hash) {
 		Body: *types.NewBody([]types.Extrinsic{[]byte{}}),
 	}
 
-	err = chain.Block.AddBlock(b)
+	err = chain.BlockState().AddBlock(b)
 	require.NoError(t, err)
 
-	rt, err := chain.Block.GetRuntime(&b.Header.ParentHash)
+	rt, err := chain.BlockState().GetRuntime(&b.Header.ParentHash)
 	require.NoError(t, err)
 
-	chain.Block.StoreRuntime(b.Header.Hash(), rt)
+	chain.BlockState().StoreRuntime(b.Header.Hash(), rt)
 
-	hash, err := chain.Block.GetHashByNumber(big.NewInt(3))
+	hash, err := chain.BlockState().GetHashByNumber(big.NewInt(3))
 	require.NoError(t, err)
 
 	core := newCoreService(t, chain)
-	return NewStateModule(net, chain.Storage, core), &hash, &sr1
+	return NewStateModule(net, chain.StorageState(), core), &hash, &sr1
 }

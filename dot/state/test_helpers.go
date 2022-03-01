@@ -236,9 +236,9 @@ func AddBlocksToStateWithFixedBranches(t *testing.T, blockState *BlockState, dep
 	}
 }
 
-func generateBlockWithRandomTrie(t *testing.T, serv *service,
+func generateBlockWithRandomTrie(t *testing.T, serv Service,
 	parent *common.Hash, bNum int64) (*types.Block, *runtime.TrieState) {
-	trieState, err := serv.Storage.TrieState(nil)
+	trieState, err := serv.StorageState().TrieState(nil)
 	require.NoError(t, err)
 
 	// Generate random data for trie state.
@@ -251,7 +251,7 @@ func generateBlockWithRandomTrie(t *testing.T, serv *service,
 	require.NoError(t, err)
 
 	if parent == nil {
-		bb := serv.Block.BestBlockHash()
+		bb := serv.BlockState().BestBlockHash()
 		parent = &bb
 	}
 

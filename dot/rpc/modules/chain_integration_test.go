@@ -37,9 +37,9 @@ var (
 
 func TestChainGetHeader_Genesis(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
-	header, err := state.Block.BestBlockHeader()
+	header, err := state.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 
 	di := types.NewDigestItem()
@@ -61,7 +61,7 @@ func TestChainGetHeader_Genesis(t *testing.T) {
 		},
 	}
 
-	hash := state.Block.BestBlockHash()
+	hash := state.BlockState().BestBlockHash()
 
 	res := &ChainBlockHeaderResponse{}
 	req := &ChainHashRequest{Bhash: &hash}
@@ -73,9 +73,9 @@ func TestChainGetHeader_Genesis(t *testing.T) {
 
 func TestChainGetHeader_Latest(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
-	header, err := state.Block.BestBlockHeader()
+	header, err := state.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 
 	di := types.NewDigestItem()
@@ -107,7 +107,7 @@ func TestChainGetHeader_Latest(t *testing.T) {
 
 func TestChainGetHeader_NotFound(t *testing.T) {
 	chain := newTestStateService(t)
-	svc := NewChainModule(chain.Block)
+	svc := NewChainModule(chain.BlockState())
 
 	bhash, err := common.HexToHash("0xea374832a2c3997280d2772c10e6e5b0b493ccd3d09c0ab14050320e34076c2c")
 	require.NoError(t, err)
@@ -121,9 +121,9 @@ func TestChainGetHeader_NotFound(t *testing.T) {
 
 func TestChainGetBlock_Genesis(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
-	header, err := state.Block.BestBlockHeader()
+	header, err := state.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 
 	di := types.NewDigestItem()
@@ -145,7 +145,7 @@ func TestChainGetBlock_Genesis(t *testing.T) {
 		},
 	}
 
-	hash := state.Block.BestBlockHash()
+	hash := state.BlockState().BestBlockHash()
 
 	expected := &ChainBlockResponse{
 		Block: ChainBlock{
@@ -165,9 +165,9 @@ func TestChainGetBlock_Genesis(t *testing.T) {
 
 func TestChainGetBlock_Latest(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
-	header, err := state.Block.BestBlockHeader()
+	header, err := state.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 
 	di := types.NewDigestItem()
@@ -206,7 +206,7 @@ func TestChainGetBlock_Latest(t *testing.T) {
 
 func TestChainGetBlock_NoFound(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	bhash, err := common.HexToHash("0xea374832a2c3997280d2772c10e6e5b0b493ccd3d09c0ab14050320e34076c2c")
 	require.NoError(t, err)
@@ -220,7 +220,7 @@ func TestChainGetBlock_NoFound(t *testing.T) {
 
 func TestChainGetBlockHash_Latest(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	resString := string("")
 	res := ChainHashResponse(resString)
@@ -229,13 +229,13 @@ func TestChainGetBlockHash_Latest(t *testing.T) {
 	err := svc.GetBlockHash(nil, &req, &res)
 	require.NoError(t, err)
 
-	expected := state.Block.BestBlockHash()
+	expected := state.BlockState().BestBlockHash()
 	require.Equal(t, expected.String(), res)
 }
 
 func TestChainGetBlockHash_ByNumber(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	resString := string("")
 	res := ChainHashResponse(resString)
@@ -244,14 +244,14 @@ func TestChainGetBlockHash_ByNumber(t *testing.T) {
 	err := svc.GetBlockHash(nil, &req, &res)
 	require.NoError(t, err)
 
-	expected, err := state.Block.GetBlockByNumber(big.NewInt(1))
+	expected, err := state.BlockState().GetBlockByNumber(big.NewInt(1))
 	require.NoError(t, err)
 	require.Equal(t, expected.Header.Hash().String(), res)
 }
 
 func TestChainGetBlockHash_ByHex(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	resString := string("")
 	res := ChainHashResponse(resString)
@@ -260,14 +260,14 @@ func TestChainGetBlockHash_ByHex(t *testing.T) {
 	err := svc.GetBlockHash(nil, &req, &res)
 	require.NoError(t, err)
 
-	expected, err := state.Block.GetBlockByNumber(big.NewInt(1))
+	expected, err := state.BlockState().GetBlockByNumber(big.NewInt(1))
 	require.NoError(t, err)
 	require.Equal(t, expected.Header.Hash().String(), res)
 }
 
 func TestChainGetBlockHash_Array(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	resString := string("")
 	res := ChainHashResponse(resString)
@@ -280,9 +280,9 @@ func TestChainGetBlockHash_Array(t *testing.T) {
 	err := svc.GetBlockHash(nil, &req, &res)
 	require.NoError(t, err)
 
-	expected0, err := state.Block.GetBlockByNumber(big.NewInt(0))
+	expected0, err := state.BlockState().GetBlockByNumber(big.NewInt(0))
 	require.NoError(t, err)
-	expected1, err := state.Block.GetBlockByNumber(big.NewInt(1))
+	expected1, err := state.BlockState().GetBlockByNumber(big.NewInt(1))
 	require.NoError(t, err)
 	expected := []string{expected0.Header.Hash().String(), expected1.Header.Hash().String()}
 
@@ -291,7 +291,7 @@ func TestChainGetBlockHash_Array(t *testing.T) {
 
 func TestChainGetFinalizedHead(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 	_, _, genesisHeader := genesis.NewTestGenesisWithTrieAndHeader(t)
 	var res ChainHashResponse
 	err := svc.GetFinalizedHead(nil, &EmptyRequest{}, &res)
@@ -303,7 +303,7 @@ func TestChainGetFinalizedHead(t *testing.T) {
 
 func TestChainGetFinalizedHeadByRound(t *testing.T) {
 	state := newTestStateService(t)
-	svc := NewChainModule(state.Block)
+	svc := NewChainModule(state.BlockState())
 
 	var res ChainHashResponse
 	req := ChainFinalizedHeadRequest{0, 0}
@@ -324,14 +324,14 @@ func TestChainGetFinalizedHeadByRound(t *testing.T) {
 		Number:     big.NewInt(1),
 		Digest:     digest,
 	}
-	err = state.Block.AddBlock(&types.Block{
+	err = state.BlockState().AddBlock(&types.Block{
 		Header: *header,
 		Body:   types.Body{},
 	})
 	require.NoError(t, err)
 
 	testhash := header.Hash()
-	err = state.Block.SetFinalisedHash(testhash, 77, 1)
+	err = state.BlockState().SetFinalisedHash(testhash, 77, 1)
 	require.NoError(t, err)
 
 	req = ChainFinalizedHeadRequest{77, 1}
@@ -340,7 +340,7 @@ func TestChainGetFinalizedHeadByRound(t *testing.T) {
 	require.Equal(t, common.BytesToHex(testhash[:]), res)
 }
 
-func newTestStateService(t *testing.T) *state.Service {
+func newTestStateService(t *testing.T) state.Service {
 	testDatadirPath := t.TempDir()
 
 	ctrl := gomock.NewController(t)
@@ -369,7 +369,7 @@ func newTestStateService(t *testing.T) *state.Service {
 	require.NoError(t, err)
 
 	if stateSrvc != nil {
-		rtCfg.NodeStorage.BaseDB = stateSrvc.Base
+		rtCfg.NodeStorage.BaseDB = stateSrvc.BaseState()
 	} else {
 		rtCfg.NodeStorage.BaseDB, err = utils.SetupDatabase(filepath.Join(testDatadirPath, "offline_storage"), false)
 		require.NoError(t, err)
@@ -378,7 +378,7 @@ func newTestStateService(t *testing.T) *state.Service {
 	rt, err := wasmer.NewRuntimeFromGenesis(rtCfg)
 	require.NoError(t, err)
 
-	loadTestBlocks(t, genesisHeader.Hash(), stateSrvc.Block, rt)
+	loadTestBlocks(t, genesisHeader.Hash(), stateSrvc.BlockState(), rt)
 
 	t.Cleanup(func() {
 		stateSrvc.Stop()

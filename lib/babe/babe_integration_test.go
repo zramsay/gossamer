@@ -102,7 +102,7 @@ func createTestService(t *testing.T, cfg *ServiceConfig) *Service {
 	testDatadirPath := t.TempDir()
 	require.NoError(t, err)
 
-	var dbSrv *state.Service
+	var dbSrv state.Service
 	if cfg.BlockState == nil || cfg.StorageState == nil || cfg.EpochState == nil {
 		config := state.Config{
 			Path:      testDatadirPath,
@@ -122,9 +122,9 @@ func createTestService(t *testing.T, cfg *ServiceConfig) *Service {
 			_ = dbSrv.Stop()
 		})
 
-		cfg.BlockState = dbSrv.Block
-		cfg.StorageState = dbSrv.Storage
-		cfg.EpochState = dbSrv.Epoch
+		cfg.BlockState = dbSrv.BlockState()
+		cfg.StorageState = dbSrv.StorageState()
+		cfg.EpochState = dbSrv.EpochState()
 	}
 
 	rtCfg := &wasmer.Config{}
@@ -137,7 +137,7 @@ func createTestService(t *testing.T, cfg *ServiceConfig) *Service {
 
 	nodeStorage := runtime.NodeStorage{}
 	if dbSrv != nil {
-		nodeStorage.BaseDB = dbSrv.Base
+		nodeStorage.BaseDB = dbSrv.BaseState()
 	} else {
 		nodeStorage.BaseDB, err = utils.SetupDatabase(filepath.Join(testDatadirPath, "offline_storage"), false)
 		require.NoError(t, err)
@@ -207,10 +207,10 @@ func newTestServiceSetupParameters(t *testing.T) (*Service, *state.EpochState, *
 	require.NoError(t, err)
 
 	s := &Service{
-		epochState: dbSrv.Epoch,
+		epochState: dbSrv.EpochState(),
 	}
 
-	return s, dbSrv.Epoch, genCfg
+	return s, dbSrv.EpochState(), genCfg
 }
 
 func TestService_SlotDuration(t *testing.T) {

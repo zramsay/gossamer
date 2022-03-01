@@ -1314,7 +1314,8 @@ func newTestGenesisRawFile(t *testing.T, cfg *dot.Config) (filename string) {
 
 	filename = filepath.Join(t.TempDir(), "genesis.json")
 
-	fp := utils.GetGssmrGenesisRawPath()
+	fp, err := utils.GetGssmrGenesisRawPath()
+	require.NoError(t, err)
 
 	gssmrGen, err := genesis.NewGenesisFromJSONRaw(fp)
 	require.NoError(t, err)
@@ -1365,7 +1366,8 @@ func newTestGenesisAndRuntime(t *testing.T) (filename string) {
 
 // NewTestGenesis returns a test genesis instance using "gssmr" raw data
 func newTestGenesis(t *testing.T) *genesis.Genesis {
-	fp := utils.GetGssmrGenesisRawPath()
+	fp, err := utils.GetGssmrGenesisRawPath()
+	require.NoError(t, err)
 
 	gssmrGen, err := genesis.NewGenesisFromJSONRaw(fp)
 	require.NoError(t, err)

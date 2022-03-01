@@ -25,17 +25,17 @@ var kr, _ = keystore.NewEd25519Keyring()
 func TestGrandpaProveFinality(t *testing.T) {
 	testStateService := newTestStateService(t)
 
-	state.AddBlocksToState(t, testStateService.Block, 3, false)
-	bestBlock, err := testStateService.Block.BestBlock()
+	state.AddBlocksToState(t, testStateService.BlockState(), 3, false)
+	bestBlock, err := testStateService.BlockState().BestBlock()
 
 	if err != nil {
 		t.Errorf("Fail: bestblock failed")
 	}
 
-	gmSvc := NewGrandpaModule(testStateService.Block, nil)
+	gmSvc := NewGrandpaModule(testStateService.BlockState(), nil)
 
-	testStateService.Block.SetJustification(bestBlock.Header.ParentHash, make([]byte, 10))
-	testStateService.Block.SetJustification(bestBlock.Header.Hash(), make([]byte, 11))
+	testStateService.BlockState().SetJustification(bestBlock.Header.ParentHash, make([]byte, 10))
+	testStateService.BlockState().SetJustification(bestBlock.Header.Hash(), make([]byte, 11))
 
 	var expectedResponse ProveFinalityResponse
 	expectedResponse = append(expectedResponse, make([]byte, 10), make([]byte, 11))

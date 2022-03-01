@@ -210,7 +210,7 @@ func TestInitNode_LoadGenesisData(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	gendata, err := stateSrvc.Base.LoadGenesisData()
+	gendata, err := stateSrvc.BaseState().LoadGenesisData()
 	require.NoError(t, err)
 
 	testGenesis := newTestGenesis(t)
@@ -223,7 +223,7 @@ func TestInitNode_LoadGenesisData(t *testing.T) {
 	}
 	require.Equal(t, expected, gendata)
 
-	genesisHeader, err = stateSrvc.Block.BestBlockHeader()
+	genesisHeader, err = stateSrvc.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 
 	stateRoot := genesisHeader.StateRoot
@@ -303,17 +303,16 @@ func TestInitNode_LoadBalances(t *testing.T) {
 
 	node, err := NewNode(cfg, ks)
 	require.NoError(t, err)
-
 	mgr := node.Services.Get(&state.Service{})
 
-	stateSrv, ok := mgr.(*state.Service)
+	stateSrv, ok := mgr.(state.Service)
 	require.True(t, ok, "could not find core service")
 	require.NotNil(t, stateSrv)
 
 	kr, _ := keystore.NewSr25519Keyring()
 	alice := kr.Alice().Public().(*sr25519.PublicKey).AsBytes()
 
-	bal, err := stateSrv.Storage.GetStorage(nil, balanceKey(t, alice))
+	bal, err := stateSrv.StorageState().GetStorage(nil, balanceKey(t, alice))
 	require.NoError(t, err)
 
 	const genesisBalance = "0x0000000000000001"

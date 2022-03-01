@@ -51,12 +51,13 @@ func newTestVerificationManager(t *testing.T, genCfg *types.BabeConfiguration) *
 		genCfg = genesisBABEConfig
 	}
 
-	dbSrv.Epoch, err = state.NewEpochStateFromGenesis(dbSrv.DB(), dbSrv.Block, genCfg)
+	epochState, err := state.NewEpochStateFromGenesis(dbSrv.DB(), dbSrv.BlockState(), genCfg)
 	require.NoError(t, err)
+	dbSrv.SetEpochState(epochState)
 
 	logger.Patch(log.SetLevel(defaultTestLogLvl))
 
-	vm, err := NewVerificationManager(dbSrv.Block, dbSrv.Epoch)
+	vm, err := NewVerificationManager(dbSrv.BlockState(), dbSrv.EpochState())
 	require.NoError(t, err)
 	return vm
 }

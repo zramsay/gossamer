@@ -243,7 +243,7 @@ func setupChildStateStorage(t *testing.T) (*ChildStateModule, common.Hash) {
 
 	st := newTestStateService(t)
 
-	tr, err := st.Storage.TrieState(nil)
+	tr, err := st.StorageState().TrieState(nil)
 	require.NoError(t, err)
 
 	tr.Set([]byte(":first_key"), []byte(":value1"))
@@ -260,10 +260,10 @@ func setupChildStateStorage(t *testing.T) (*ChildStateModule, common.Hash) {
 	stateRoot, err := tr.Root()
 	require.NoError(t, err)
 
-	bb, err := st.Block.BestBlock()
+	bb, err := st.BlockState().BestBlock()
 	require.NoError(t, err)
 
-	err = st.Storage.StoreTrie(tr, nil)
+	err = st.StorageState().StoreTrie(tr, nil)
 	require.NoError(t, err)
 
 	digest := types.NewDigest()
@@ -282,11 +282,11 @@ func setupChildStateStorage(t *testing.T) (*ChildStateModule, common.Hash) {
 		Body: types.Body{},
 	}
 
-	err = st.Block.AddBlock(b)
+	err = st.BlockState().AddBlock(b)
 	require.NoError(t, err)
 
-	hash, err := st.Block.GetHashByNumber(b.Header.Number)
+	hash, err := st.BlockState().GetHashByNumber(b.Header.Number)
 	require.NoError(t, err)
 
-	return NewChildStateModule(st.Storage, st.Block), hash
+	return NewChildStateModule(st.StorageState(), st.BlockState()), hash
 }

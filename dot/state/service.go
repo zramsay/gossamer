@@ -5,8 +5,6 @@ package state
 
 import (
 	"fmt"
-	"github.com/ChainSafe/gossamer/lib/common"
-	"github.com/ChainSafe/gossamer/lib/genesis"
 	"math/big"
 	"path/filepath"
 
@@ -16,6 +14,8 @@ import (
 	"github.com/ChainSafe/gossamer/internal/log"
 	"github.com/ChainSafe/gossamer/internal/metrics"
 	"github.com/ChainSafe/gossamer/lib/blocktree"
+	"github.com/ChainSafe/gossamer/lib/common"
+	"github.com/ChainSafe/gossamer/lib/genesis"
 	"github.com/ChainSafe/gossamer/lib/trie"
 	"github.com/ChainSafe/gossamer/lib/utils"
 
@@ -26,6 +26,7 @@ var logger = log.NewFromGlobal(
 	log.AddContext("pkg", "state"),
 )
 
+// Service interface that defines methods for state.Service
 type Service interface {
 	UseMemDB()
 	DB() chaindb.Database
@@ -48,11 +49,13 @@ type Service interface {
 	SetBlockState(state *BlockState)
 	SetEpochState(state *EpochState)
 	SetTelemetryClient(client telemetry.Client)
+	SetTransactionState(state *TransactionState)
+	SetGrandpaState(state *GrandpaState)
 }
 
 var _ Service = &service{}
 
-// Service is the struct that holds storage, block and network states
+// service is the struct that holds storage, block and network states
 type service struct {
 	dbPath      string
 	logLvl      log.Level
@@ -100,6 +103,12 @@ func (s *service) SetEpochState(epochState *EpochState) {
 }
 func (s *service) SetBlockState(blockState *BlockState) {
 	s.Block = blockState
+}
+func (s *service) SetTransactionState(transactionState *TransactionState) {
+	s.Transaction = transactionState
+}
+func (s *service) SetGrandpaState(grandpaState *GrandpaState) {
+	s.Grandpa = grandpaState
 }
 
 // Config is the default configuration used by state service.

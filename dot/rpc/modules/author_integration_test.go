@@ -113,7 +113,7 @@ func TestAuthorModule_Pending_Integration(t *testing.T) {
 		Validity:  new(transaction.Validity),
 	}
 
-	_, err = integrationTestController.stateSrv.Transaction.Push(vtx)
+	_, err = integrationTestController.stateSrv.TransactionState().Push(vtx)
 	require.NoError(t, err)
 
 	err = auth.PendingExtrinsics(nil, nil, res)
@@ -134,7 +134,7 @@ func TestAuthorModule_SubmitExtrinsic_Integration(t *testing.T) {
 			telemetry.NewTxpoolImport(0, 1),
 		)
 
-	integrationTestController.stateSrv.Transaction = state.NewTransactionState(telemetryMock)
+	integrationTestController.stateSrv.SetTransactionState(state.NewTransactionState(telemetryMock))
 
 	genesisHash := integrationTestController.genesisHeader.Hash()
 
@@ -170,7 +170,7 @@ func TestAuthorModule_SubmitExtrinsic_Integration(t *testing.T) {
 	}
 
 	expectedHash := ExtrinsicHashResponse(expectedExtrinsic.Hash().String())
-	txOnPool := integrationTestController.stateSrv.Transaction.PendingInPool()
+	txOnPool := integrationTestController.stateSrv.TransactionState().PendingInPool()
 
 	// compare results
 	require.Len(t, txOnPool, 1)
@@ -201,7 +201,7 @@ func TestAuthorModule_SubmitExtrinsic_invalid(t *testing.T) {
 	err := auth.SubmitExtrinsic(nil, &Extrinsic{extHex}, res)
 	require.EqualError(t, err, runtime.ErrInvalidTransaction.Message)
 
-	txOnPool := integrationTestController.stateSrv.Transaction.PendingInPool()
+	txOnPool := integrationTestController.stateSrv.TransactionState().PendingInPool()
 	require.Len(t, txOnPool, 0)
 }
 
@@ -229,7 +229,7 @@ func TestAuthorModule_SubmitExtrinsic_AlreadyInPool(t *testing.T) {
 			telemetry.NewTxpoolImport(0, 1),
 		)
 
-	integrationTestController.stateSrv.Transaction = state.NewTransactionState(telemetryMock)
+	integrationTestController.stateSrv.SetTransactionState(state.NewTransactionState(telemetryMock))
 
 	genesisHash := integrationTestController.genesisHeader.Hash()
 
@@ -267,7 +267,7 @@ func TestAuthorModule_SubmitExtrinsic_AlreadyInPool(t *testing.T) {
 		},
 	}
 
-	integrationTestController.stateSrv.Transaction.AddToPool(expected)
+	integrationTestController.stateSrv.TransactionState().AddToPool(expected)
 
 	err := auth.SubmitExtrinsic(nil, &Extrinsic{extHex}, res)
 	require.NoError(t, err)
@@ -529,7 +529,7 @@ func TestAuthorModule_SubmitExtrinsic_WithVersion_V0910(t *testing.T) {
 			telemetry.NewTxpoolImport(0, 1),
 		)
 
-	integrationTestController.stateSrv.Transaction = state.NewTransactionState(telemetryMock)
+	integrationTestController.stateSrv.SetTransactionState(state.NewTransactionState(telemetryMock))
 
 	genesisHash := integrationTestController.genesisHeader.Hash()
 
@@ -571,7 +571,7 @@ func TestAuthorModule_SubmitExtrinsic_WithVersion_V0910(t *testing.T) {
 	}
 
 	expectedHash := ExtrinsicHashResponse(expectedExtrinsic.Hash().String())
-	txOnPool := integrationTestController.stateSrv.Transaction.PendingInPool()
+	txOnPool := integrationTestController.stateSrv.TransactionState().PendingInPool()
 
 	// compare results
 	require.Len(t, txOnPool, 1)
@@ -584,7 +584,7 @@ type integrationTestController struct {
 	genesisTrie   *trie.Trie
 	genesisHeader *types.Header
 	runtime       runtime.Instance
-	stateSrv      *state.Service
+	stateSrv      state.Service
 	network       core.Network
 	storageState  core.StorageState
 	keystore      *keystore.GlobalKeystore
@@ -612,7 +612,7 @@ func setupStateAndRuntime(t *testing.T, basepath string, useInstance useRuntimeI
 	})
 	state2test.UseMemDB()
 
-	state2test.Transaction = state.NewTransactionState(telemetryMock)
+	state2test.SetTransactionState(state.NewTransactionState(telemetryMock))
 	err := state2test.Initialise(gen, genesisHeader, genTrie)
 	require.NoError(t, err)
 
@@ -630,19 +630,19 @@ func setupStateAndRuntime(t *testing.T, basepath string, useInstance useRuntimeI
 		genesisTrie:   genTrie,
 		genesisHeader: genesisHeader,
 		stateSrv:      state2test,
-		storageState:  state2test.Storage,
+		storageState:  state2test.StorageState(),
 		keystore:      ks,
 		network:       net2test,
 	}
 
 	if useInstance != nil {
-		rtStorage, err := state2test.Storage.TrieState(nil)
+		rtStorage, err := state2test.StorageState().TrieState(nil)
 		require.NoError(t, err)
 
 		rt := useInstance(t, rtStorage)
 
 		genesisHash := genesisHeader.Hash()
-		state2test.Block.StoreRuntime(genesisHash, rt)
+		state2test.BlockState().StoreRuntime(genesisHash, rt)
 		integrationTestController.runtime = rt
 	}
 
@@ -672,7 +672,7 @@ func setupStateAndPopulateTrieState(t *testing.T, basepath string,
 	})
 	state2test.UseMemDB()
 
-	state2test.Transaction = state.NewTransactionState(telemetryMock)
+	state2test.SetTransactionState(state.NewTransactionState(telemetryMock))
 
 	err := state2test.Initialise(gen, genesisHeader, genTrie)
 	require.NoError(t, err)
@@ -691,13 +691,13 @@ func setupStateAndPopulateTrieState(t *testing.T, basepath string,
 		genesisTrie:   genTrie,
 		genesisHeader: genesisHeader,
 		stateSrv:      state2test,
-		storageState:  state2test.Storage,
+		storageState:  state2test.StorageState(),
 		keystore:      ks,
 		network:       net2test,
 	}
 
 	if useInstance != nil {
-		rtStorage, err := state2test.Storage.TrieState(nil)
+		rtStorage, err := state2test.StorageState().TrieState(nil)
 		require.NoError(t, err)
 
 		rt := useInstance(t, rtStorage)
@@ -705,17 +705,17 @@ func setupStateAndPopulateTrieState(t *testing.T, basepath string,
 		integrationTestController.runtime = rt
 
 		genesisHash := genesisHeader.Hash()
-		state2test.Block.StoreRuntime(genesisHash, rt)
+		state2test.BlockState().StoreRuntime(genesisHash, rt)
 
 		b := runtime.InitializeRuntimeToTest(t, rt, genesisHash)
 
-		err = state2test.Block.AddBlock(b)
+		err = state2test.BlockState().AddBlock(b)
 		require.NoError(t, err)
 
-		err = state2test.Storage.StoreTrie(rtStorage, &b.Header)
+		err = state2test.StorageState().StoreTrie(rtStorage, &b.Header)
 		require.NoError(t, err)
 
-		state2test.Block.StoreRuntime(b.Header.Hash(), rt)
+		state2test.BlockState().StoreRuntime(b.Header.Hash(), rt)
 	}
 
 	return integrationTestController
@@ -731,8 +731,8 @@ func newAuthorModule(t *testing.T, integrationTestController *integrationTestCon
 	digestHandlerMock := NewMockDigestHandler(nil)
 
 	cfg := &core.Config{
-		TransactionState:     integrationTestController.stateSrv.Transaction,
-		BlockState:           integrationTestController.stateSrv.Block,
+		TransactionState:     integrationTestController.stateSrv.TransactionState(),
+		BlockState:           integrationTestController.stateSrv.BlockState(),
 		StorageState:         integrationTestController.storageState,
 		Network:              integrationTestController.network,
 		Keystore:             integrationTestController.keystore,
@@ -742,5 +742,6 @@ func newAuthorModule(t *testing.T, integrationTestController *integrationTestCon
 
 	core2test, err := core.NewService(cfg)
 	require.NoError(t, err)
-	return NewAuthorModule(log.New(log.SetLevel(log.Debug)), core2test, integrationTestController.stateSrv.Transaction)
+	return NewAuthorModule(log.New(log.SetLevel(log.Debug)), core2test,
+		integrationTestController.stateSrv.TransactionState())
 }

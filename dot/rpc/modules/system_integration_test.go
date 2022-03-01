@@ -289,7 +289,7 @@ func setupSystemModule(t *testing.T) *SystemModule {
 	net := newNetworkService(t)
 	chain := newTestStateService(t)
 	// init storage with test data
-	ts, err := chain.Storage.TrieState(nil)
+	ts, err := chain.StorageState().TrieState(nil)
 	require.NoError(t, err)
 
 	aliceAcctStoKey, err := common.HexToBytes("0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c" +
@@ -316,7 +316,7 @@ func setupSystemModule(t *testing.T) *SystemModule {
 	require.NoError(t, err)
 	ts.Set(aliceAcctStoKey, aliceAcctEncoded)
 
-	err = chain.Storage.StoreTrie(ts, nil)
+	err = chain.StorageState().StoreTrie(ts, nil)
 	require.NoError(t, err)
 
 	digest := types.NewDigest()
@@ -325,10 +325,10 @@ func setupSystemModule(t *testing.T) *SystemModule {
 	err = digest.Add(*prd)
 	require.NoError(t, err)
 
-	err = chain.Block.AddBlock(&types.Block{
+	err = chain.BlockState().AddBlock(&types.Block{
 		Header: types.Header{
 			Number:     big.NewInt(3),
-			ParentHash: chain.Block.BestBlockHash(),
+			ParentHash: chain.BlockState().BestBlockHash(),
 			StateRoot:  ts.MustRoot(),
 			Digest:     digest,
 		},
@@ -347,12 +347,12 @@ func setupSystemModule(t *testing.T) *SystemModule {
 		AnyTimes()
 
 	txQueue := state.NewTransactionState(telemetryMock)
-	return NewSystemModule(net, nil, core, chain.Storage, txQueue, nil, nil)
+	return NewSystemModule(net, nil, core, chain.StorageState(), txQueue, nil, nil)
 }
 
 //go:generate mockgen -destination=mock_network_test.go -package $GOPACKAGE github.com/ChainSafe/gossamer/dot/core Network
 
-func newCoreService(t *testing.T, srvc *state.Service) *core.Service {
+func newCoreService(t *testing.T, srvc state.Service) *core.Service {
 	// setup service
 	tt := trie.NewEmptyTrie()
 	rt := wasmer.NewTestInstanceWithTrie(t, runtime.NODE_RUNTIME, tt)
@@ -362,7 +362,7 @@ func newCoreService(t *testing.T, srvc *state.Service) *core.Service {
 	})
 
 	if srvc != nil {
-		srvc.Block.StoreRuntime(srvc.Block.BestBlockHash(), rt)
+		srvc.BlockState().StoreRuntime(srvc.BlockState().BestBlockHash(), rt)
 	}
 
 	// insert alice key for testing
@@ -386,12 +386,12 @@ func newCoreService(t *testing.T, srvc *state.Service) *core.Service {
 	cfg := &core.Config{
 		Runtime:              rt,
 		Keystore:             ks,
-		TransactionState:     srvc.Transaction,
-		BlockState:           srvc.Block,
-		StorageState:         srvc.Storage,
-		EpochState:           srvc.Epoch,
+		TransactionState:     srvc.TransactionState(),
+		BlockState:           srvc.BlockState(),
+		StorageState:         srvc.StorageState(),
+		EpochState:           srvc.EpochState(),
 		Network:              mocknet,
-		CodeSubstitutedState: srvc.Base,
+		CodeSubstitutedState: srvc.BaseState(),
 		DigestHandler:        digestHandlerMock,
 	}
 

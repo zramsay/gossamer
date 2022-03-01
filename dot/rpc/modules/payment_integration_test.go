@@ -22,7 +22,7 @@ import (
 
 func TestPaymentQueryInfo(t *testing.T) {
 	state := newTestStateService(t)
-	bestBlockHash := state.Block.BestBlockHash()
+	bestBlockHash := state.BlockState().BestBlockHash()
 
 	t.Run("When there is no errors", func(t *testing.T) {
 		mockedQueryInfo := &types.TransactionPaymentQueryInfo{

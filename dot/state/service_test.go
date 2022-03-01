@@ -23,7 +23,7 @@ import (
 )
 
 // helper method to create and start test state service
-func newTestService(t *testing.T) (state *Service) {
+func newTestService(t *testing.T) (state Service) {
 	ctrl := gomock.NewController(t)
 	telemetryMock := NewMockClient(ctrl)
 	telemetryMock.EXPECT().SendMessage(gomock.Any()).AnyTimes()
@@ -37,7 +37,7 @@ func newTestService(t *testing.T) (state *Service) {
 	return state
 }
 
-func newTestMemDBService(t *testing.T) *Service {
+func newTestMemDBService(t *testing.T) Service {
 	ctrl := gomock.NewController(t)
 	telemetryMock := NewMockClient(ctrl)
 	telemetryMock.EXPECT().SendMessage(gomock.Any()).AnyTimes()
@@ -90,7 +90,7 @@ func TestService_Initialise(t *testing.T) {
 	err = state.Start()
 	require.NoError(t, err)
 
-	head, err := state.Block.BestBlockHeader()
+	head, err := state.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 	require.Equal(t, genesisHeader, head)
 }
@@ -137,10 +137,10 @@ func TestService_BlockTree(t *testing.T) {
 	require.NoError(t, err)
 
 	// add blocks to state
-	AddBlocksToState(t, stateA.Block, 10, false)
-	head := stateA.Block.BestBlockHash()
+	AddBlocksToState(t, stateA.BlockState(), 10, false)
+	head := stateA.BlockState().BestBlockHash()
 
-	err = stateA.Block.SetFinalisedHash(head, 1, 1)
+	err = stateA.BlockState().SetFinalisedHash(head, 1, 1)
 	require.NoError(t, err)
 
 	err = stateA.Stop()
@@ -156,7 +156,7 @@ func TestService_BlockTree(t *testing.T) {
 
 	err = stateB.Stop()
 	require.NoError(t, err)
-	require.Equal(t, stateA.Block.BestBlockHash(), stateB.Block.BestBlockHash())
+	require.Equal(t, stateA.BlockState().BestBlockHash(), stateB.BlockState().BestBlockHash())
 }
 
 func TestService_StorageTriePruning(t *testing.T) {
@@ -185,16 +185,16 @@ func TestService_StorageTriePruning(t *testing.T) {
 	require.NoError(t, err)
 
 	var blocks []*types.Block
-	parentHash := serv.Block.GenesisHash()
+	parentHash := serv.BlockState().GenesisHash()
 
 	totalBlock := 10
 	for i := 1; i < totalBlock; i++ {
 		block, trieState := generateBlockWithRandomTrie(t, serv, &parentHash, int64(i))
 
-		err = serv.Storage.blockState.AddBlock(block)
+		err = serv.StorageState().blockState.AddBlock(block)
 		require.NoError(t, err)
 
-		err = serv.Storage.StoreTrie(trieState, &block.Header)
+		err = serv.StorageState().StoreTrie(trieState, &block.Header)
 		require.NoError(t, err)
 
 		blocks = append(blocks, block)
@@ -204,7 +204,7 @@ func TestService_StorageTriePruning(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	for _, b := range blocks {
-		_, err := serv.Storage.LoadFromDB(b.Header.StateRoot)
+		_, err := serv.StorageState().LoadFromDB(b.Header.StateRoot)
 		if b.Header.Number.Int64() >= int64(totalBlock-retainBlocks-1) {
 			require.NoError(t, err, fmt.Sprintf("Got error for block %d", b.Header.Number.Int64()))
 			continue
@@ -248,10 +248,10 @@ func TestService_PruneStorage(t *testing.T) {
 		require.NoError(t, err)
 		block.Header.Digest = digest
 
-		err = serv.Storage.blockState.AddBlock(block)
+		err = serv.StorageState().blockState.AddBlock(block)
 		require.NoError(t, err)
 
-		err = serv.Storage.StoreTrie(trieState, nil)
+		err = serv.StorageState().StoreTrie(trieState, nil)
 		require.NoError(t, err)
 
 		// Only finalise a block at height 3
@@ -262,14 +262,14 @@ func TestService_PruneStorage(t *testing.T) {
 
 	// add some blocks to prune, on a different chain from the finalised block
 	var prunedArr []prunedBlock
-	parentHash := serv.Block.GenesisHash()
+	parentHash := serv.BlockState().GenesisHash()
 	for i := 0; i < 3; i++ {
 		block, trieState := generateBlockWithRandomTrie(t, serv, &parentHash, int64(i+1))
 
-		err = serv.Storage.blockState.AddBlock(block)
+		err = serv.StorageState().blockState.AddBlock(block)
 		require.NoError(t, err)
 
-		err = serv.Storage.StoreTrie(trieState, nil)
+		err = serv.StorageState().StoreTrie(trieState, nil)
 		require.NoError(t, err)
 
 		// Store the other blocks that will be pruned.
@@ -284,12 +284,12 @@ func TestService_PruneStorage(t *testing.T) {
 	}
 
 	// finalise a block
-	serv.Block.SetFinalisedHash(toFinalize, 0, 0)
+	serv.BlockState().SetFinalisedHash(toFinalize, 0, 0)
 
 	time.Sleep(1 * time.Second)
 
 	for _, v := range prunedArr {
-		tr := serv.Storage.blockState.tries.get(v.hash)
+		tr := serv.StorageState().blockState.tries.get(v.hash)
 		require.Nil(t, tr)
 	}
 }
@@ -314,41 +314,41 @@ func TestService_Rewind(t *testing.T) {
 	err = serv.Start()
 	require.NoError(t, err)
 
-	err = serv.Grandpa.setCurrentSetID(3)
+	err = serv.GrandpaState().setCurrentSetID(3)
 	require.NoError(t, err)
 
-	err = serv.Grandpa.setSetIDChangeAtBlock(1, big.NewInt(5))
+	err = serv.GrandpaState().setSetIDChangeAtBlock(1, big.NewInt(5))
 	require.NoError(t, err)
 
-	err = serv.Grandpa.setSetIDChangeAtBlock(2, big.NewInt(8))
+	err = serv.GrandpaState().setSetIDChangeAtBlock(2, big.NewInt(8))
 	require.NoError(t, err)
 
-	err = serv.Grandpa.setSetIDChangeAtBlock(3, big.NewInt(10))
+	err = serv.GrandpaState().setSetIDChangeAtBlock(3, big.NewInt(10))
 	require.NoError(t, err)
 
-	AddBlocksToState(t, serv.Block, 12, false)
-	head := serv.Block.BestBlockHash()
-	err = serv.Block.SetFinalisedHash(head, 0, 0)
+	AddBlocksToState(t, serv.BlockState(), 12, false)
+	head := serv.BlockState().BestBlockHash()
+	err = serv.BlockState().SetFinalisedHash(head, 0, 0)
 	require.NoError(t, err)
 
 	err = serv.Rewind(6)
 	require.NoError(t, err)
 
-	num, err := serv.Block.BestBlockNumber()
+	num, err := serv.BlockState().BestBlockNumber()
 	require.NoError(t, err)
 	require.Equal(t, big.NewInt(6), num)
 
-	setID, err := serv.Grandpa.GetCurrentSetID()
+	setID, err := serv.GrandpaState().GetCurrentSetID()
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), setID)
 
-	_, err = serv.Grandpa.GetSetIDChange(1)
+	_, err = serv.GrandpaState().GetSetIDChange(1)
 	require.NoError(t, err)
 
-	_, err = serv.Grandpa.GetSetIDChange(2)
+	_, err = serv.GrandpaState().GetSetIDChange(2)
 	require.Equal(t, chaindb.ErrKeyNotFound, err)
 
-	_, err = serv.Grandpa.GetSetIDChange(3)
+	_, err = serv.GrandpaState().GetSetIDChange(3)
 	require.Equal(t, chaindb.ErrKeyNotFound, err)
 }
 
@@ -368,7 +368,7 @@ func TestService_Import(t *testing.T) {
 	genData, genTrie, genesisHeader := genesis.NewTestGenesisWithTrieAndHeader(t)
 	err := serv.Initialise(genData, genesisHeader, genTrie)
 	require.NoError(t, err)
-	err = serv.db.Close()
+	err = serv.DB().Close()
 	require.NoError(t, err)
 
 	tr := trie.NewEmptyTrie()
@@ -403,15 +403,15 @@ func TestService_Import(t *testing.T) {
 	err = serv.Start()
 	require.NoError(t, err)
 
-	bestBlockHeader, err := serv.Block.BestBlockHeader()
+	bestBlockHeader, err := serv.BlockState().BestBlockHeader()
 	require.NoError(t, err)
 	require.Equal(t, header, bestBlockHeader)
 
-	root, err := serv.Storage.StorageRoot()
+	root, err := serv.StorageState().StorageRoot()
 	require.NoError(t, err)
 	require.Equal(t, header.StateRoot, root)
 
-	skip, err := serv.Epoch.SkipVerify(header)
+	skip, err := serv.EpochState().SkipVerify(header)
 	require.NoError(t, err)
 	require.True(t, skip)
 
