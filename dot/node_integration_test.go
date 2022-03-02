@@ -168,11 +168,13 @@ func TestStartNode(t *testing.T) {
 
 	err = node.Start()
 	require.NoError(t, err)
+	// TODO (ed): this isn't getting started signal, and is hanging here.
 	<-node.started
 	node.Stop()
 }
 
 func TestInitNode_LoadGenesisData(t *testing.T) {
+	// TODO (ed): this is failing with sigabrt
 	cfg := NewTestConfig(t)
 	require.NotNil(t, cfg)
 
@@ -301,9 +303,11 @@ func TestInitNode_LoadBalances(t *testing.T) {
 	ed25519Keyring, _ := keystore.NewEd25519Keyring()
 	ks.Gran.Insert(ed25519Keyring.Alice())
 
+	stateConfig := state.Config{LogLevel: log.Critical}
+	stateService := state.NewService(stateConfig)
 	node, err := NewNode(cfg, ks)
 	require.NoError(t, err)
-	mgr := node.Services.Get(&state.Service{})
+	mgr := node.Services.Get(stateService)
 
 	stateSrv, ok := mgr.(state.Service)
 	require.True(t, ok, "could not find core service")
@@ -322,6 +326,7 @@ func TestInitNode_LoadBalances(t *testing.T) {
 }
 
 func TestNode_StopFunc(t *testing.T) {
+	// TODO (ed): fix this
 	t.Skip()
 	testvar := "before"
 
