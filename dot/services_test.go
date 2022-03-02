@@ -32,11 +32,8 @@ import (
 
 func Test_createBlockVerifier(t *testing.T) {
 	cfg := NewTestConfig(t)
-
 	genFile := newTestGenesisRawFile(t, cfg)
-
 	cfg.Init.Genesis = genFile
-
 	nodeInstance := nodeBuilder{}
 	err := nodeInstance.initNode(cfg)
 	require.NoError(t, err)
@@ -47,42 +44,29 @@ func Test_createBlockVerifier(t *testing.T) {
 	stateSrvc.SetBlockState(&state.BlockState{})
 	stateSrvc.SetEpochState(&state.EpochState{})
 
-	type args struct {
-		st state.Service
-	}
-	tests := []struct {
-		name string
-		args args
-		want *babe.VerificationManager
-		err  error
-	}{
-		{
-			name: "nil BlockState test",
-			args: args{st: stateSrvc},
-			err:  errors.New("cannot have nil EpochState"),
-		},
-		{
-			name: "working example",
-			args: args{st: stateSrvc},
-			want: &babe.VerificationManager{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := nodeInstance.createBlockVerifier(tt.args.st)
-			if tt.err != nil {
-				assert.EqualError(t, err, tt.err.Error())
-			} else {
-				assert.NoError(t, err)
-			}
+	t.Run("base case", func(t *testing.T) {
+		got, err := nodeInstance.createBlockVerifier(stateSrvc)
+		assert.NoError(t, err)
+		assert.NotNil(t, got)
+	})
+}
 
-			if tt.want != nil {
-				assert.NotNil(t, got)
-			} else {
-				assert.Nil(t, got)
-			}
-		})
-	}
+func Test_createBlockVerifier_nilEpochState(t *testing.T) {
+	cfg := NewTestConfig(t)
+	genFile := newTestGenesisRawFile(t, cfg)
+	cfg.Init.Genesis = genFile
+	nodeInstance := nodeBuilder{}
+	err := nodeInstance.initNode(cfg)
+	require.NoError(t, err)
+
+	stateSrvc, err := nodeInstance.createStateService(cfg)
+	require.NoError(t, err)
+
+	stateSrvc.SetBlockState(&state.BlockState{})
+	t.Run("nil EpochState", func(t *testing.T) {
+		_, err := nodeInstance.createBlockVerifier(stateSrvc)
+		assert.EqualError(t, err, errors.New("cannot have nil EpochState").Error())
+	})
 }
 
 func Test_createRuntimeStorage(t *testing.T) {
