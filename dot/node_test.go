@@ -84,7 +84,7 @@ func TestLoadGlobalNodeName(t *testing.T) {
 		},
 		{
 			name:     "wrong basepath test",
-			basepath: "wrong_path",
+			basepath: t.TempDir(),
 			err:      errors.New("Key not found"),
 		},
 	}
