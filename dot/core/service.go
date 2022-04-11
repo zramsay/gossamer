@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/ChainSafe/gossamer/dot/network"
 	"github.com/ChainSafe/gossamer/dot/types"
@@ -23,11 +24,25 @@ import (
 	"github.com/ChainSafe/gossamer/lib/transaction"
 	cscale "github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	ctypes "github.com/centrifuge/go-substrate-rpc-client/v3/types"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
 var (
-	_      services.Service = &Service{}
-	logger                  = log.NewFromGlobal(log.AddContext("pkg", "core"))
+	_                    services.Service = &Service{}
+	logger                                = log.NewFromGlobal(log.AddContext("pkg", "core"))
+	blockAddChAddCounter                  = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "gossamer_dot_core_service_blockaddch",
+		Name:      "add_total",
+	})
+	blockAddChAddedCounter = promauto.NewCounter(prometheus.CounterOpts{
+		Namespace: "gossamer_dot_core_service_blockaddch",
+		Name:      "added_total",
+	})
+	blockAddChAddedGauge = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "gossamer_dot_core_service_blockaddch",
+		Name:      "time_ms",
+	})
 )
 
 // QueryKeyValueChanges represents the key-value data inside a block storage
@@ -229,13 +244,17 @@ func (s *Service) handleBlock(block *types.Block, state *rtstorage.TrieState) er
 	}
 
 	go func() {
+
 		s.Lock()
 		defer s.Unlock()
 		if s.ctx.Err() != nil {
 			return
 		}
-
+		blockAddChAddCounter.Inc()
+		start := time.Now()
 		s.blockAddCh <- block
+		blockAddChAddedGauge.Set(float64(time.Since(start).Milliseconds()))
+		blockAddChAddedCounter.Inc()
 	}()
 
 	return nil
