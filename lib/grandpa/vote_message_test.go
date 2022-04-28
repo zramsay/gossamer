@@ -11,20 +11,27 @@ import (
 	"github.com/ChainSafe/gossamer/dot/types"
 	"github.com/ChainSafe/gossamer/lib/crypto/ed25519"
 	"github.com/ChainSafe/gossamer/lib/keystore"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCheckForEquivocation_NoEquivocation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -50,16 +57,22 @@ func TestCheckForEquivocation_NoEquivocation(t *testing.T) {
 }
 
 func TestCheckForEquivocation_WithEquivocation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -96,16 +109,22 @@ func TestCheckForEquivocation_WithEquivocation(t *testing.T) {
 }
 
 func TestCheckForEquivocation_WithExistingEquivocation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -152,16 +171,22 @@ func TestCheckForEquivocation_WithExistingEquivocation(t *testing.T) {
 }
 
 func TestValidateMessage_Valid(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -186,16 +211,22 @@ func TestValidateMessage_Valid(t *testing.T) {
 }
 
 func TestValidateMessage_InvalidSignature(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -221,16 +252,22 @@ func TestValidateMessage_InvalidSignature(t *testing.T) {
 }
 
 func TestValidateMessage_SetIDMismatch(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
 		Interval:      time.Second,
@@ -255,16 +292,22 @@ func TestValidateMessage_SetIDMismatch(t *testing.T) {
 }
 
 func TestValidateMessage_Equivocation(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -299,16 +342,22 @@ func TestValidateMessage_Equivocation(t *testing.T) {
 }
 
 func TestValidateMessage_BlockDoesNotExist(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,
@@ -334,16 +383,22 @@ func TestValidateMessage_BlockDoesNotExist(t *testing.T) {
 }
 
 func TestValidateMessage_IsNotDescendant(t *testing.T) {
+	ctrl := gomock.NewController(t)
+
 	st := newTestState(t)
 	net := newTestNetwork(t)
 
 	kr, err := keystore.NewEd25519Keyring()
 	require.NoError(t, err)
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kr.Bob().(*ed25519.Keypair),
 		Network:       net,

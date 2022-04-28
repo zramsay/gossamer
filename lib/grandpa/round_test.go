@@ -99,10 +99,14 @@ func setupGrandpa(t *testing.T, kp *ed25519.Keypair) (
 		EXPECT().
 		SendMessage(gomock.Any()).AnyTimes()
 
+	digestHandler := NewMockDigestHandler(ctrl)
+	digestHandler.EXPECT().NextGrandpaAuthorityChange().
+		Return(uint(2 ^ 64 - 1))
+
 	cfg := &Config{
 		BlockState:    st.Block,
 		GrandpaState:  st.Grandpa,
-		DigestHandler: NewMockDigestHandler(),
+		DigestHandler: digestHandler,
 		Voters:        voters,
 		Keypair:       kp,
 		LogLvl:        log.Info,
