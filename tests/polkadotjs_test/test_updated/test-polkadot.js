@@ -59,14 +59,14 @@ describe('Testing polkadot.js/api calls:', function () {
             const runtimeVersion = await api.runtimeVersion;
             console.log(`runtime version: ${runtimeVersion}`);
             expect(runtimeVersion).to.be.not.null;
-            expect(runtimeVersion).to.have.property('specName').contains('node')
-            expect(runtimeVersion).to.have.property('apis').lengthOf.above(10)
+            expect(runtimeVersion).to.have.property('specName').contains('gssmr-test')
+            expect(runtimeVersion).to.have.property('apis').lengthOf.above(9)
         });
 
         it('call api.libraryInfo', async function () {
             const libraryInfo = await api.libraryInfo;
             expect(libraryInfo).to.be.not.null;
-            expect(libraryInfo).to.be.equal('@polkadot/api v8.0.2');
+            expect(libraryInfo).to.be.equal('@polkadot/api v8.2.2-5');
         });
     });
     describe('upgrade runtime', () => {
