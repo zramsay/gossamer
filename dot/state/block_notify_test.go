@@ -149,7 +149,7 @@ func TestService_RegisterUnRegisterConcurrentCalls(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 100; i++ {
-			testVer := NewMockVersion(uint32(i))
+			testVer := NewMockVersion(t, uint32(i))
 			go bs.notifyRuntimeUpdated(testVer)
 		}
 	}()
@@ -167,8 +167,8 @@ func TestService_RegisterUnRegisterConcurrentCalls(t *testing.T) {
 }
 
 // NewMockVersion creates and returns an runtime Version interface mock
-func NewMockVersion(specVer uint32) *runtimemocks.Version {
-	m := new(runtimemocks.Version)
+func NewMockVersion(t *testing.T, specVer uint32) *runtimemocks.Version {
+	m := runtimemocks.NewVersion(t)
 	m.On("SpecName").Return([]byte(`mock-spec`))
 	m.On("ImplName").Return(nil)
 	m.On("AuthoringVersion").Return(uint32(0))

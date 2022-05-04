@@ -20,7 +20,7 @@ import (
 //go:generate mockery --srcpkg=github.com/aws/aws-sdk-go/service/ecs/ecsiface --name ECSAPI --case underscore
 
 func Test_serviceScaler_findServiceArns(t *testing.T) {
-	mockECS := mocks.ECSAPI{}
+	mockECS := mocks.NewECSAPI(t)
 	mockECS.
 		On("ListServicesWithContext", mock.Anything, &ecs.ListServicesInput{
 			Cluster: aws.String("someCluster"),
@@ -135,7 +135,7 @@ func Test_serviceScaler_findServiceArns(t *testing.T) {
 }
 
 func Test_serviceScaler_drainServices(t *testing.T) {
-	mockECS := mocks.ECSAPI{}
+	mockECS := mocks.NewECSAPI(t)
 	mockECS.
 		On("UpdateServiceWithContext", mock.Anything, &ecs.UpdateServiceInput{
 			Cluster:      aws.String("someCluster"),
@@ -213,7 +213,7 @@ func Test_serviceScaler_drainServices(t *testing.T) {
 }
 
 func Test_serviceScaler_waitForRunningCount(t *testing.T) {
-	mockECS := mocks.ECSAPI{}
+	mockECS := mocks.NewECSAPI(t)
 	mockECS.
 		On("DescribeServicesWithContext", mock.Anything, &ecs.DescribeServicesInput{
 			Cluster: aws.String("someCluster"),
@@ -241,7 +241,7 @@ func Test_serviceScaler_waitForRunningCount(t *testing.T) {
 		}).Return(nil, fmt.Errorf("someError")).Once()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	mockECSCancel := mocks.ECSAPI{}
+	mockECSCancel := mocks.NewECSAPI(t)
 	mockECSCancel.
 		On("DescribeServicesWithContext", mock.Anything, &ecs.DescribeServicesInput{
 			Cluster: aws.String("someCluster"),
@@ -371,7 +371,7 @@ func Test_newServiceScaler(t *testing.T) {
 }
 
 func Test_serviceScaler_scaleServices(t *testing.T) {
-	mockECS := mocks.ECSAPI{}
+	mockECS := mocks.NewECSAPI(t)
 	mockECS.
 		On("ListServicesWithContext", mock.Anything, &ecs.ListServicesInput{
 			Cluster: aws.String("someCluster"),
@@ -408,13 +408,13 @@ func Test_serviceScaler_scaleServices(t *testing.T) {
 			},
 		}}, nil).Once()
 
-	findServiceArnsErrECS := mocks.ECSAPI{}
+	findServiceArnsErrECS := mocks.NewECSAPI(t)
 	findServiceArnsErrECS.
 		On("ListServicesWithContext", mock.Anything, &ecs.ListServicesInput{
 			Cluster: aws.String("someCluster"),
 		}).Return(nil, fmt.Errorf("someError")).Once()
 
-	updateServicesErrECS := mocks.ECSAPI{}
+	updateServicesErrECS := mocks.NewECSAPI(t)
 	updateServicesErrECS.
 		On("ListServicesWithContext", mock.Anything, &ecs.ListServicesInput{
 			Cluster: aws.String("someCluster"),

@@ -222,7 +222,7 @@ func Test_Service_handleCodeSubstitution(t *testing.T) {
 			blockHash: common.BytesToHex(testRuntime),
 		}
 
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("Keystore").Return(&keystore.GlobalKeystore{})
 		runtimeMock.On("NodeStorage").Return(runtime.NodeStorage{})
 		runtimeMock.On("NetworkService").Return(new(runtime.TestRuntimeNetwork))
@@ -249,7 +249,7 @@ func Test_Service_handleCodeSubstitution(t *testing.T) {
 			blockHash: common.BytesToHex(testRuntime),
 		}
 
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("Keystore").Return(&keystore.GlobalKeystore{})
 		runtimeMock.On("NodeStorage").Return(runtime.NodeStorage{})
 		runtimeMock.On("NetworkService").Return(new(runtime.TestRuntimeNetwork))
@@ -387,7 +387,7 @@ func Test_Service_handleBlock(t *testing.T) {
 		block.Header.Number = 21
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		mockStorageState := NewMockStorageState(ctrl)
 		mockStorageState.EXPECT().StoreTrie(trieState, &block.Header).Return(nil)
 		mockBlockState := NewMockBlockState(ctrl)
@@ -414,7 +414,7 @@ func Test_Service_handleBlock(t *testing.T) {
 		block.Header.Number = 21
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		mockStorageState := NewMockStorageState(ctrl)
 		mockStorageState.EXPECT().StoreTrie(trieState, &block.Header).Return(nil)
 		mockBlockState := NewMockBlockState(ctrl)
@@ -474,7 +474,7 @@ func Test_Service_HandleBlockProduced(t *testing.T) {
 		}
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		mockStorageState := NewMockStorageState(ctrl)
 		mockStorageState.EXPECT().StoreTrie(trieState, &block.Header).Return(nil)
 		mockBlockState := NewMockBlockState(ctrl)
@@ -516,7 +516,7 @@ func Test_Service_maintainTransactionPool(t *testing.T) {
 		vt := transaction.NewValidTransaction(extrinsic, validity)
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("ValidateTransaction", types.Extrinsic{21}).Return(nil, errTestDummyError)
 		mockTxnState := NewMockTransactionState(ctrl)
 		mockTxnState.EXPECT().RemoveExtrinsic(types.Extrinsic{21}).Times(2)
@@ -551,7 +551,7 @@ func Test_Service_maintainTransactionPool(t *testing.T) {
 		tx := transaction.NewValidTransaction(types.Extrinsic{21}, &transaction.Validity{Propagate: true})
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("ValidateTransaction", types.Extrinsic{21}).
 			Return(&transaction.Validity{Propagate: true}, nil)
 		mockTxnState := NewMockTransactionState(ctrl)
@@ -640,7 +640,7 @@ func Test_Service_handleBlocksAsync(t *testing.T) {
 		block.Header.Number = 21
 
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("ValidateTransaction", types.Extrinsic{21}).Return(nil, errTestDummyError)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().BestBlockHash().Return(common.Hash{}).Times(2)
@@ -770,7 +770,7 @@ func TestService_handleChainReorg(t *testing.T) {
 	t.Run("invalid transaction", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		runtimeMockErr := new(mocksruntime.Instance)
+		runtimeMockErr := mocksruntime.NewInstance(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().HighestCommonAncestor(testPrevHash, testCurrentHash).
 			Return(testAncestorHash, nil)
@@ -789,7 +789,7 @@ func TestService_handleChainReorg(t *testing.T) {
 	t.Run("happy path", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		runtimeMockOk := new(mocksruntime.Instance)
+		runtimeMockOk := mocksruntime.NewInstance(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().HighestCommonAncestor(testPrevHash, testCurrentHash).
 			Return(testAncestorHash, nil)
@@ -937,7 +937,7 @@ func TestService_DecodeSessionKeys(t *testing.T) {
 	t.Run("ok case", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		runtimeMock.On("DecodeSessionKeys", testEncKeys).Return(testEncKeys, nil)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().GetRuntime(nil).Return(runtimeMock, nil)
@@ -1033,7 +1033,7 @@ func TestServiceGetRuntimeVersion(t *testing.T) {
 		mockStorageState.EXPECT().GetStateRootFromBlock(&common.Hash{}).Return(&common.Hash{}, nil).MaxTimes(2)
 		mockStorageState.EXPECT().TrieState(&common.Hash{}).Return(ts, nil).MaxTimes(2)
 
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().GetRuntime(&common.Hash{}).Return(runtimeMock, nil)
 		runtimeMock.On("SetContextStorage", ts)
@@ -1112,7 +1112,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().BestBlockHash().Return(common.Hash{})
-		runtimeMockErr := new(mocksruntime.Instance)
+		runtimeMockErr := mocksruntime.NewInstance(t)
 		mockBlockState.EXPECT().GetRuntime(&common.Hash{}).Return(runtimeMockErr, nil).MaxTimes(2)
 
 		mockStorageState := NewMockStorageState(ctrl)
@@ -1121,7 +1121,6 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 
 		mockTxnState := NewMockTransactionState(ctrl)
 		mockTxnState.EXPECT().Exists(types.Extrinsic{})
-
 		runtimeMockErr.On("SetContextStorage", &rtstorage.TrieState{})
 		runtimeMockErr.On("ValidateTransaction", externalExt).Return(nil, errDummyErr)
 		service := &Service{
@@ -1137,7 +1136,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
 
-		runtimeMock := new(mocksruntime.Instance)
+		runtimeMock := mocksruntime.NewInstance(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().BestBlockHash().Return(common.Hash{})
 		mockBlockState.EXPECT().GetRuntime(&common.Hash{}).Return(runtimeMock, nil).MaxTimes(2)
@@ -1216,7 +1215,7 @@ func TestServiceGetMetadata(t *testing.T) {
 		ctrl := gomock.NewController(t)
 		mockStorageState := NewMockStorageState(ctrl)
 		mockStorageState.EXPECT().TrieState(nil).Return(&rtstorage.TrieState{}, nil)
-		runtimeMockOk := new(mocksruntime.Instance)
+		runtimeMockOk := mocksruntime.NewInstance(t)
 		mockBlockState := NewMockBlockState(ctrl)
 		mockBlockState.EXPECT().GetRuntime(nil).Return(runtimeMockOk, nil)
 		runtimeMockOk.On("SetContextStorage", &rtstorage.TrieState{})

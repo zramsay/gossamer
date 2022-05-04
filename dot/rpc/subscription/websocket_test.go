@@ -40,7 +40,7 @@ func TestWSConn_HandleComm(t *testing.T) {
 		`"error":{"code":null,"message":"error StorageAPI not set"},`+
 		`"id":1}`+"\n"), msg)
 
-	wsconn.StorageAPI = modules.NewMockStorageAPI()
+	wsconn.StorageAPI = modules.NewMockStorageAPI(t)
 
 	res, err = wsconn.initStorageChangeListener(1, nil)
 	require.Nil(t, res)
@@ -163,7 +163,7 @@ func TestWSConn_HandleComm(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte(`{"jsonrpc":"2.0","error":{"code":null,"message":"error BlockAPI not set"},"id":1}`+"\n"), msg)
 
-	wsconn.BlockAPI = modules.NewMockBlockAPI()
+	wsconn.BlockAPI = modules.NewMockBlockAPI(t)
 
 	res, err = wsconn.initBlockListener(1, nil)
 	require.NoError(t, err)
@@ -193,7 +193,7 @@ func TestWSConn_HandleComm(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte(`{"jsonrpc":"2.0","error":{"code":null,"message":"error BlockAPI not set"},"id":1}`+"\n"), msg)
 
-	wsconn.BlockAPI = modules.NewMockBlockAPI()
+	wsconn.BlockAPI = modules.NewMockBlockAPI(t)
 
 	res, err = wsconn.initBlockFinalizedListener(1, nil)
 	require.NoError(t, err)
@@ -204,9 +204,9 @@ func TestWSConn_HandleComm(t *testing.T) {
 	require.Equal(t, []byte(`{"jsonrpc":"2.0","result":7,"id":1}`+"\n"), msg)
 
 	// test initExtrinsicWatch
-	wsconn.CoreAPI = modules.NewMockCoreAPI()
+	wsconn.CoreAPI = modules.NewMockCoreAPI(t)
 	wsconn.BlockAPI = nil
-	wsconn.TxStateAPI = modules.NewMockTransactionStateAPI()
+	wsconn.TxStateAPI = modules.NewMockTransactionStateAPI(t)
 	listner, err := wsconn.initExtrinsicWatch(0, []interface{}{"NotHex"})
 	require.EqualError(t, err, "could not byteify non 0x prefixed string: NotHex")
 	require.Nil(t, listner)
@@ -215,7 +215,7 @@ func TestWSConn_HandleComm(t *testing.T) {
 	require.EqualError(t, err, "error BlockAPI not set")
 	require.Nil(t, listner)
 
-	wsconn.BlockAPI = modules.NewMockBlockAPI()
+	wsconn.BlockAPI = modules.NewMockBlockAPI(t)
 	listner, err = wsconn.initExtrinsicWatch(0, []interface{}{"0x26aa"})
 	require.NoError(t, err)
 	require.NotNil(t, listner)
@@ -226,7 +226,7 @@ func TestWSConn_HandleComm(t *testing.T) {
 	require.Equal(t, `{"jsonrpc":"2.0","result":8,"id":0}`+"\n", string(msg))
 
 	// test initExtrinsicWatch with invalid transaction
-	coreAPI := new(mocks.CoreAPI)
+	coreAPI := mocks.NewCoreAPI(t)
 	coreAPI.On("HandleSubmittedExtrinsic", mock.AnythingOfType("types.Extrinsic")).Return(runtime.ErrInvalidTransaction)
 	wsconn.CoreAPI = coreAPI
 	listner, err = wsconn.initExtrinsicWatch(0,
@@ -250,8 +250,8 @@ func TestWSConn_HandleComm(t *testing.T) {
 	mockedJustBytes, err := scale.Marshal(mockedJust)
 	require.NoError(t, err)
 
-	wsconn.CoreAPI = modules.NewMockCoreAPI()
-	BlockAPI := new(mocks.BlockAPI)
+	wsconn.CoreAPI = modules.NewMockCoreAPI(t)
+	BlockAPI := mocks.NewBlockAPI(t)
 
 	fCh := make(chan *types.FinalisationInfo, 5)
 	BlockAPI.On("GetFinalisedNotifierChannel").Return(fCh)
@@ -303,7 +303,7 @@ func TestSubscribeAllHeads(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []byte(`{"jsonrpc":"2.0","error":{"code":null,"message":"error BlockAPI not set"},"id":1}`+"\n"), msg)
 
-	mockBlockAPI := new(mocks.BlockAPI)
+	mockBlockAPI := mocks.NewBlockAPI(t)
 
 	wsconn.BlockAPI = mockBlockAPI
 

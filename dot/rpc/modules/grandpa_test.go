@@ -22,22 +22,22 @@ func TestGrandpaModule_ProveFinality(t *testing.T) {
 	testHash := common.NewHash([]byte{0x01, 0x02})
 	testHashSlice := []common.Hash{testHash, testHash, testHash}
 
-	mockBlockFinalityAPI := new(mocks.BlockFinalityAPI)
-	mockBlockAPI := new(mocks.BlockAPI)
+	mockBlockFinalityAPI := mocks.NewBlockFinalityAPI(t)
+	mockBlockAPI := mocks.NewBlockAPI(t)
 	mockBlockAPI.On("SubChain", testHash, testHash).Return(testHashSlice, nil)
 	mockBlockAPI.On("HasJustification", testHash).Return(true, nil)
 	mockBlockAPI.On("GetJustification", testHash).Return([]byte("test"), nil)
 
-	mockBlockAPIHasJustErr := new(mocks.BlockAPI)
+	mockBlockAPIHasJustErr := mocks.NewBlockAPI(t)
 	mockBlockAPIHasJustErr.On("SubChain", testHash, testHash).Return(testHashSlice, nil)
 	mockBlockAPIHasJustErr.On("HasJustification", testHash).Return(false, nil)
 
-	mockBlockAPIGetJustErr := new(mocks.BlockAPI)
+	mockBlockAPIGetJustErr := mocks.NewBlockAPI(t)
 	mockBlockAPIGetJustErr.On("SubChain", testHash, testHash).Return(testHashSlice, nil)
 	mockBlockAPIGetJustErr.On("HasJustification", testHash).Return(true, nil)
 	mockBlockAPIGetJustErr.On("GetJustification", testHash).Return(nil, errors.New("GetJustification error"))
 
-	mockBlockAPISubChainErr := new(mocks.BlockAPI)
+	mockBlockAPISubChainErr := mocks.NewBlockAPI(t)
 	mockBlockAPISubChainErr.On("SubChain", testHash, testHash).Return(nil, errors.New("SubChain error"))
 
 	grandpaModule := NewGrandpaModule(mockBlockAPISubChainErr, mockBlockFinalityAPI)
@@ -149,8 +149,8 @@ func TestGrandpaModule_RoundState(t *testing.T) {
 		})
 	}
 
-	mockBlockAPI := new(mocks.BlockAPI)
-	mockBlockFinalityAPI := new(mocks.BlockFinalityAPI)
+	mockBlockAPI := mocks.NewBlockAPI(t)
+	mockBlockFinalityAPI := mocks.NewBlockFinalityAPI(t)
 	mockBlockFinalityAPI.On("GetVoters").Return(voters)
 	mockBlockFinalityAPI.On("GetSetID").Return(uint64(0))
 	mockBlockFinalityAPI.On("GetRound").Return(uint64(2))

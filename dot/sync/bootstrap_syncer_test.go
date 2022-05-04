@@ -25,7 +25,7 @@ func newTestBootstrapSyncer(t *testing.T) *bootstrapSyncer {
 		trie.EmptyHash, 200, types.NewDigest())
 	require.NoError(t, err)
 
-	bs := new(syncmocks.BlockState)
+	bs := syncmocks.NewBlockState(t)
 	bs.On("BestBlockHeader").Return(header, nil)
 	bs.On("GetHighestFinalisedHeader").Return(finHeader, nil)
 

@@ -34,12 +34,12 @@ func newTestChainSync(t *testing.T) (*chainSync, *blockQueue) {
 		trie.EmptyHash, trie.EmptyHash, 0, types.NewDigest())
 	require.NoError(t, err)
 
-	bs := new(syncmocks.BlockState)
+	bs := syncmocks.NewBlockState(t)
 	bs.On("BestBlockHeader").Return(header, nil)
 	bs.On("GetFinalisedNotifierChannel").Return(make(chan *types.FinalisationInfo, 128), nil)
 	bs.On("HasHeader", mock.AnythingOfType("common.Hash")).Return(true, nil)
 
-	net := new(syncmocks.Network)
+	net := syncmocks.NewNetwork(t)
 	net.On("DoBlockRequest", mock.AnythingOfType("peer.ID"),
 		mock.AnythingOfType("*network.BlockRequestMessage")).Return(nil, nil)
 	net.On("ReportPeer", mock.AnythingOfType("peerset.ReputationChange"), mock.AnythingOfType("peer.ID"))
@@ -79,7 +79,7 @@ func TestChainSync_SetPeerHead(t *testing.T) {
 	require.True(t, cs.pendingBlocks.hasBlock(hash))
 
 	// test case where peer has a lower head than us, but they are on the same chain as us
-	cs.blockState = new(syncmocks.BlockState)
+	cs.blockState = syncmocks.NewBlockState(t)
 	header, err := types.NewHeader(common.NewHash([]byte{0}),
 		trie.EmptyHash, trie.EmptyHash, number, types.NewDigest())
 	require.NoError(t, err)
@@ -105,7 +105,7 @@ func TestChainSync_SetPeerHead(t *testing.T) {
 	}
 
 	// test case where peer has a lower head than us, and they are on an invalid fork
-	cs.blockState = new(syncmocks.BlockState)
+	cs.blockState = syncmocks.NewBlockState(t)
 	cs.blockState.(*syncmocks.BlockState).On("BestBlockHeader").Return(header, nil)
 	fin, err = types.NewHeader(common.NewHash([]byte{0}), trie.EmptyHash,
 		trie.EmptyHash, number, types.NewDigest())
@@ -128,7 +128,7 @@ func TestChainSync_SetPeerHead(t *testing.T) {
 	}
 
 	// test case where peer has a lower head than us, but they are on a valid fork (that is not our chain)
-	cs.blockState = new(syncmocks.BlockState)
+	cs.blockState = syncmocks.NewBlockState(t)
 	cs.blockState.(*syncmocks.BlockState).On("BestBlockHeader").Return(header, nil)
 	fin, err = types.NewHeader(
 		common.NewHash([]byte{0}), trie.EmptyHash, trie.EmptyHash,
@@ -182,7 +182,7 @@ func TestChainSync_sync_bootstrap_withWorkerError(t *testing.T) {
 
 func TestChainSync_sync_tip(t *testing.T) {
 	cs, _ := newTestChainSync(t)
-	cs.blockState = new(syncmocks.BlockState)
+	cs.blockState = syncmocks.NewBlockState(t)
 	header, err := types.NewHeader(common.NewHash([]byte{0}),
 		trie.EmptyHash, trie.EmptyHash, 1000, types.NewDigest())
 	require.NoError(t, err)
@@ -586,7 +586,7 @@ func TestChainSync_validateResponse(t *testing.T) {
 
 func TestChainSync_validateResponse_firstBlock(t *testing.T) {
 	cs, _ := newTestChainSync(t)
-	bs := new(syncmocks.BlockState)
+	bs := syncmocks.NewBlockState(t)
 	bs.On("HasHeader", mock.AnythingOfType("common.Hash")).Return(false, nil)
 	cs.blockState = bs
 
