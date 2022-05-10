@@ -183,6 +183,7 @@ async function main() {
         console.log('\x1b[32m%s\x1b[0m %s', 'last block:', `${lastHeader.number} has hash ${lastHeader.hash}`);
         if (++count === 5) {
             unsubNewHeads();
+            console.log('\x1b[32m%s\x1b[0m', 'new heads unsubscribe completed')
        }
     });
 
@@ -192,6 +193,7 @@ async function main() {
         console.log('\x1b[32m%s\x1b[0m %s', 'last finalized block:',  `${lastHeader.number} has hash ${lastHeader.hash}`);
         if (++countFinalized === 5) {
             unsubFinalizedHeads();
+            console.log('\x1b[32m%s\x1b[0m', 'finalized heads unsubscribe completed')
        }
     });
 
@@ -244,70 +246,82 @@ async function main() {
     const runtimeVersion = await api.rpc.state.getRuntimeVersion();
     console.log('\x1b[32m%s\x1b[0m %s', "runtimeVersion:", runtimeVersion);
     
+    // // state_queryStorage
+    // const queryStorage = await api.rpc.state.queryStorage(["0x26aa394eea5630e07c48ae0c9558cef7a44704b568d21667356a5a050c118746e333f8c357e331db45010000"], "0x0a0f4687cfc807af53e28beb2b504c015d1db34e44126e4af9e5489473fe205b", null);
+    // console.log('\x1b[32m%s\x1b[0m %s', "queryStorage:", queryStorage);
 
-    // chain defaults
-    const genesisHash = await api.genesisHash;
-    console.log(`genesis hash: ${genesisHash}`);
+    // // state_getReadProof
+    // const readProof = await api.rpc.state.getReadProof(["0x26aa394eea5630e07c48ae0c9558cef7a44704b568d21667356a5a050c118746e333f8c357e331db45010000"]);
+    // console.log('\x1b[32m%s\x1b[0m %s', "readProof:", readProof);
 
-    const runtimeMetadata = await  api.runtimeMetadata;
-    // currently not sending runtimeMetadata to console because it's very large, uncomment if you want to see
-    console.log(`runtime metadata: ${runtimeMetadata.metadata}`);
+    // state_subscribeRuntimeVersion/state_unsubscribeRuntimeVersion
+    let countRuntime = 0;
+    const unsubRuntimeVersion = await api.rpc.state.subscribeRuntimeVersion((lastRuntime) => {
+        console.log('\x1b[32m%s\x1b[0m %s', 'last Runtime Version:',  `${lastRuntime}`);
+        if (++countRuntime === 1) {
+            unsubRuntimeVersion();
+            console.log('\x1b[32m%s\x1b[0m', 'runtime unsubscribe completed')
+       }
+    });
 
-    const libraryInfo = await api.libraryInfo;
-    console.log(`library info: ${libraryInfo}`);
+    // state_subscribeStorage/state_unsubscribeStorage
+    let countStorage = 0;
+    const unsubStorage = await api.rpc.state.subscribeStorage(["0x1cb6f36e027abb2091cfb5110ab5087f06155b3cd9a8c9e5e9a23fd5dc13a5ed"], (lastStorage) => {                  
+        console.log('\x1b[32m%s\x1b[0m %s', 'last Storage:',  `${lastStorage}`); 
+        if (++countStorage === 3) {
+            unsubStorage();
+            console.log('\x1b[32m%s\x1b[0m', 'storage unsubscribe completed')
+        }
+    });
 
-    // //Basic queries
-    // const now = await api.query.timestamp.now();
-    // console.log(`timestamp now: ${now}`);
+    // Child State
+    // // childstate_getKeys
+    // const childStateGetKeys = await api.rpc.childstate.getKeys("0x00", "", null);
+    // console.log('\x1b[32m%s\x1b[0m %s', "childStateGetKeys:", childStateGetKeys);
+    
+    // // childstate_getStorage
+    // const childStateGetStorage = await api.rpc.childstate.getStorage("0x00", "", null);
+    // console.log('\x1b[32m%s\x1b[0m %s', "childStateGetStorage:", childStateGetStorage);
+  
+    // // childstate_getStorageHash
+    // const childStateGetStorageHash = await api.rpc.childstate.getStorageHash("0x00", "", null);
+    // console.log('\x1b[32m%s\x1b[0m %s', "childStateGetStorageHash:", childStateGetStorageHash);
+  
+    // childstate_getStorageSize
+    // const childStateGetStorageSize = await api.rpc.childstate.getStorageSize("0x00", "", null);
+    // console.log('\x1b[32m%s\x1b[0m %s', "childStateGetStorageSize:", childStateGetStorageSize);
+  
+    // Engine 
+    // engine_createBlock
+    // const engineCreateBlock = await api.rpc.engine.createBlock();
+    // console.log('\x1b[32m%s\x1b[0m %s', "engineCreateBlock:", engineCreateBlock);
+  
+    // engine_finalizedBlock
+    // const engineFinalizedBlock = await api.rpc.engine.finalizeBlock();
+    // console.log('\x1b[32m%s\x1b[0m %s', "finalizedBlock:", engineFinalizedBlock);
+  
+    // Payment
+    // payment_queryInfo
+    // const paymentQueryInfo = await api.rpc.payment.queryInfo(testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', "paymentQueryInfo:", paymentQueryInfo);
+  
+    // Contracts
+    // contracts_call
+    // const contractsCall = await api.rpc.contracts.call(testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', "contractsCall:", contractsCall);
+  
+    // contracts_getStorage
+    // const contractsGetStorage = await api.rpc.contracts.getStorage(testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', "contractsGetStorage:", contractsGetStorage);
 
-    // // Retrieve the account balance & nonce via the system module
-    // const ADDR_Alice = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
-    // const { nonce, data: balance } = await api.query.system.account(ADDR_Alice);
-    // console.log(`Alice: balance of ${balance.free} and a nonce of ${nonce}`)
+    // contracts_rentProjection
+    // const contractsRentProjection = await api.rpc.contracts.rentProjection(testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', "contractsRentProjection:", contractsRentProjection);
 
-    // // RPC queries
-    // const chain = await api.rpc.system.chain();
-    // console.log(`system chain: ${chain}`);
-
-    // const sysProperties = await api.rpc.system.properties();
-    // console.log(`system properties: ${sysProperties}`);
-
-    // const chainType = await api.rpc.system.chainType();
-    // console.log(`system chainType: ${chainType}`);
-
-    // const header = await api.rpc.chain.getHeader();
-    // console.log(`header ${header}`);
-
-    // // Subscribe to the new headers
-    // // TODO: Issue: chain.subscribeNewHeads is returning values twice for each result new head.
-    // let count = 0;
-    // const unsubHeads = await api.rpc.chain.subscribeNewHeads((lastHeader) => {
-    //     console.log(`${chain}: last block #${lastHeader.number} has hash ${lastHeader.hash}`);
-    //     if (++count === 5) {
-    //         unsubHeads();
-    //     }
-    // });
-
-    // const blockHash = await api.rpc.chain.getBlockHash();
-    // console.log(`current blockhash ${blockHash}`);
-
-    // const block = await api.rpc.chain.getBlock(blockHash);
-    // console.log(`current block: ${block}`);
-
-    // // Simple transaction
-    // // TODO Issue:  This currently fails with error: RPC-CORE: submitExtrinsic(extrinsic: Extrinsic): Hash:: -32000: validator: (nil *modules.Extrinsic): null
-    // const keyring = new Keyring({type: 'sr25519' });
-    // const aliceKey = keyring.addFromUri('//Alice',  { name: 'Alice default' });
-    // console.log(`${aliceKey.meta.name}: has address ${aliceKey.address} with publicKey [${aliceKey.publicKey}]`);
-
-    // const ADDR_Bob = '0x90b5ab205c6974c9ea841be688864633dc9ca8a357843eeacf2314649965fe22';
-
-    // const transfer = await api.tx.balances.transfer(ADDR_Bob, 12345)
-    //     .signAndSend(aliceKey);
-
-    // console.log(`hxHash ${transfer}`);
-
+    // Sync
+    // sync_state_getSyncSpec
+    // const genSyncSpec = await api.rpc.syncstate.genSyncSpec();
+    // console.log('\x1b[32m%s\x1b[0m %s', "genSyncSpec:", genSyncSpec);
 }
-
 
 main().catch(console.error);
