@@ -16,6 +16,7 @@ digest = ""
 
 [init]
 genesis = "./chain/dev/dev-spec-raw_gssmr9190.json"
+#genesis = "./chain/dev/genesis-spec.json"
 
 [account]
 key = "alice"
