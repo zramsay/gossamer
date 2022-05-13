@@ -35,6 +35,8 @@ nomdns = false
 [rpc]
 enabled = true
 ws = true
+ws-unsafe = true
+unsafe = true
 port = 8545
 host = "localhost"
 modules = ["system", "author", "chain", "state", "rpc", "grandpa", "offchain", "childstate", "syncstate", "payment"]

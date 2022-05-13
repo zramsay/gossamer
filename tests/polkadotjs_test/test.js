@@ -12,53 +12,61 @@ async function main() {
     const genesisHash = await api.genesisHash;
     console.log(`genesis hash: ${genesisHash}`);
 
-    const runtimeMetadata = await  api.runtimeMetadata;
-    // currently not sending runtimeMetadata to console because it's very large, uncomment if you want to see
-    // console.log(`runtime metadata: ${runtimeMetadata}`);
+    // const testExt = await api.tx.system.remark([0, 1, 2]).paymentInfo();
+    // console.log('\x1b[32m%s\x1b[0m %s', 'testExt:',  testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', 'testExt hash:',  testExt.hash);
+    // // Payment
+    // // payment_queryInfo
+    // const paymentQueryInfo = await api.rpc.payment.queryInfo(testExt);
+    // console.log('\x1b[32m%s\x1b[0m %s', "paymentQueryInfo:", paymentQueryInfo);
 
-    const runtimeVersion = await api.runtimeVersion;
-    console.log(`runtime version: ${runtimeVersion}`);
+    // const runtimeMetadata = await  api.runtimeMetadata;
+    // // currently not sending runtimeMetadata to console because it's very large, uncomment if you want to see
+    // // console.log(`runtime metadata: ${runtimeMetadata}`);
 
-    const libraryInfo = await api.libraryInfo;
-    console.log(`library info: ${libraryInfo}`);
+    // const runtimeVersion = await api.runtimeVersion;
+    // console.log(`runtime version: ${runtimeVersion}`);
 
-    //Basic queries
-    const now = await api.query.timestamp.now();
-    console.log(`timestamp now: ${now}`);
+    // const libraryInfo = await api.libraryInfo;
+    // console.log(`library info: ${libraryInfo}`);
 
-    // Retrieve the account balance & nonce via the system module
-    const ADDR_Alice = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
-    const { nonce, data: balance } = await api.query.system.account(ADDR_Alice);
-    console.log(`Alice: balance of ${balance.free} and a nonce of ${nonce}`)
+    // //Basic queries
+    // const now = await api.query.timestamp.now();
+    // console.log(`timestamp now: ${now}`);
 
-    // RPC queries
-    const chain = await api.rpc.system.chain();
-    console.log(`system chain: ${chain}`);
+    // // Retrieve the account balance & nonce via the system module
+    // const ADDR_Alice = '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY';
+    // const { nonce, data: balance } = await api.query.system.account(ADDR_Alice);
+    // console.log(`Alice: balance of ${balance.free} and a nonce of ${nonce}`)
 
-    const sysProperties = await api.rpc.system.properties();
-    console.log(`system properties: ${sysProperties}`);
+    // // RPC queries
+    // const chain = await api.rpc.system.chain();
+    // console.log(`system chain: ${chain}`);
 
-    const chainType = await api.rpc.system.chainType();
-    console.log(`system chainType: ${chainType}`);
+    // const sysProperties = await api.rpc.system.properties();
+    // console.log(`system properties: ${sysProperties}`);
 
-    const header = await api.rpc.chain.getHeader();
-    console.log(`header ${header}`);
+    // const chainType = await api.rpc.system.chainType();
+    // console.log(`system chainType: ${chainType}`);
 
-    // Subscribe to the new headers
-    // TODO: Issue: chain.subscribeNewHeads is returning values twice for each result new head.
-    let count = 0;
-    const unsubHeads = await api.rpc.chain.subscribeNewHeads((lastHeader) => {
-        console.log(`${chain}: last block #${lastHeader.number} has hash ${lastHeader.hash}`);
-        if (++count === 5) {
-            unsubHeads();
-        }
-    });
+    // const header = await api.rpc.chain.getHeader();
+    // console.log(`header ${header}`);
 
-    const blockHash = await api.rpc.chain.getBlockHash();
-    console.log(`current blockhash ${blockHash}`);
+    // // Subscribe to the new headers
+    // // TODO: Issue: chain.subscribeNewHeads is returning values twice for each result new head.
+    // let count = 0;
+    // const unsubHeads = await api.rpc.chain.subscribeNewHeads((lastHeader) => {
+    //     console.log(`${chain}: last block #${lastHeader.number} has hash ${lastHeader.hash}`);
+    //     if (++count === 5) {
+    //         unsubHeads();
+    //     }
+    // });
 
-    const block = await api.rpc.chain.getBlock(blockHash);
-    console.log(`current block: ${block}`);
+    // const blockHash = await api.rpc.chain.getBlockHash();
+    // console.log(`current blockhash ${blockHash}`);
+
+    // const block = await api.rpc.chain.getBlock(blockHash);
+    // console.log(`current block: ${block}`);
 
     // Simple transaction
     // TODO Issue:  This currently fails with error: RPC-CORE: submitExtrinsic(extrinsic: Extrinsic): Hash:: -32000: validator: (nil *modules.Extrinsic): null
@@ -72,7 +80,6 @@ async function main() {
         .signAndSend(aliceKey);
 
     console.log(`hxHash ${transfer}`);
-
 }
 
 main().catch(console.error);
