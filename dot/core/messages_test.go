@@ -44,8 +44,9 @@ type mockGetRuntime struct {
 }
 
 type mockBlockState struct {
-	bestHeader *mockBestHeader
-	getRuntime *mockGetRuntime
+	bestHeader         *mockBestHeader
+	getRuntime         *mockGetRuntime
+	callsBestBlockHash bool
 }
 
 type mockStorageState struct {
@@ -63,6 +64,11 @@ type mockSetContextStorage struct {
 	trieState *storage.TrieState
 }
 
+type mockVersion struct {
+	version *mocksruntime.Version
+	err     error
+}
+
 type mockValidateTxn struct {
 	input    types.Extrinsic
 	validity *transaction.Validity
@@ -73,6 +79,8 @@ type mockRuntime struct {
 	runtime           *mocksruntime.Instance
 	setContextStorage *mockSetContextStorage
 	validateTxn       *mockValidateTxn
+	version           *mockVersion
+	skipLoop          bool
 }
 
 func TestService_TransactionsCount(t *testing.T) {
@@ -163,6 +171,10 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 			mockNetwork: &mockNetwork{
 				IsSynced: true,
 			},
+			mockStorageState: &mockStorageState{
+				input:     &testEmptyHeader.StateRoot,
+				trieState: &storage.TrieState{},
+			},
 			mockBlockState: &mockBlockState{
 				bestHeader: &mockBestHeader{
 					header: testEmptyHeader,
@@ -188,6 +200,10 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 					},
 				},
 			},
+			mockStorageState: &mockStorageState{
+				input:     &testEmptyHeader.StateRoot,
+				trieState: &storage.TrieState{},
+			},
 			mockBlockState: &mockBlockState{
 				bestHeader: &mockBestHeader{
 					header: testEmptyHeader,
@@ -195,6 +211,11 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				getRuntime: &mockGetRuntime{
 					runtime: runtimeMock,
 				},
+			},
+			mockRuntime: &mockRuntime{
+				runtime:           runtimeMock,
+				setContextStorage: &mockSetContextStorage{trieState: &storage.TrieState{}},
+				skipLoop:          true,
 			},
 			args: args{
 				peerID: peer.ID("jimbo"),
@@ -210,9 +231,6 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				bestHeader: &mockBestHeader{
 					header: testEmptyHeader,
 				},
-				getRuntime: &mockGetRuntime{
-					runtime: runtimeMock,
-				},
 			},
 			mockStorageState: &mockStorageState{
 				input: &common.Hash{},
@@ -225,7 +243,7 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				},
 			},
 			expErr: errDummyErr,
-			expErrMsg: "failed validating transaction for peerID D1KeRhQ: cannot get trie state from storage" +
+			expErrMsg: "cannot get trie state from storage" +
 				" for root 0x0000000000000000000000000000000000000000000000000000000000000000: dummy error for testing",
 		},
 		{
@@ -247,6 +265,7 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				getRuntime: &mockGetRuntime{
 					runtime: runtimeMock2,
 				},
+				callsBestBlockHash: true,
 			},
 			mockStorageState: &mockStorageState{
 				input:     &common.Hash{},
@@ -255,9 +274,11 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 			mockRuntime: &mockRuntime{
 				runtime:           runtimeMock2,
 				setContextStorage: &mockSetContextStorage{trieState: &storage.TrieState{}},
+				version:           &mockVersion{},
 				validateTxn: &mockValidateTxn{
-					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
-					err:   runtime.ErrInvalidTransaction,
+					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
+					//input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
+					err: runtime.ErrInvalidTransaction,
 				},
 			},
 			args: args{
@@ -286,6 +307,7 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				getRuntime: &mockGetRuntime{
 					runtime: runtimeMock3,
 				},
+				callsBestBlockHash: true,
 			},
 			mockStorageState: &mockStorageState{
 				input:     &common.Hash{},
@@ -302,8 +324,10 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 			mockRuntime: &mockRuntime{
 				runtime:           runtimeMock3,
 				setContextStorage: &mockSetContextStorage{trieState: &storage.TrieState{}},
+				version:           &mockVersion{},
 				validateTxn: &mockValidateTxn{
-					input:    types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
+					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
+					//input:    types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
 					validity: &transaction.Validity{Propagate: true},
 				},
 			},
@@ -339,6 +363,11 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 						tt.mockBlockState.getRuntime.runtime,
 						tt.mockBlockState.getRuntime.err)
 				}
+
+				if tt.mockBlockState.callsBestBlockHash {
+					blockState.EXPECT().BestBlockHash().Return(
+						testEmptyHeader.StateRoot)
+				}
 				s.blockState = blockState
 			}
 			if tt.mockStorageState != nil {
@@ -358,8 +387,11 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 			if tt.mockRuntime != nil {
 				rt := tt.mockRuntime.runtime
 				rt.On("SetContextStorage", tt.mockRuntime.setContextStorage.trieState)
-				rt.On("ValidateTransaction", tt.mockRuntime.validateTxn.input).
-					Return(tt.mockRuntime.validateTxn.validity, tt.mockRuntime.validateTxn.err)
+				if !tt.mockRuntime.skipLoop {
+					rt.On("Version").Return(runtimeVersionData, tt.mockRuntime.version.err)
+					rt.On("ValidateTransaction", tt.mockRuntime.validateTxn.input).
+						Return(tt.mockRuntime.validateTxn.validity, tt.mockRuntime.validateTxn.err)
+				}
 			}
 
 			res, err := s.HandleTransactionMessage(tt.args.peerID, tt.args.msg)

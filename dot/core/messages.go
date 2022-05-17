@@ -6,6 +6,7 @@ package core
 import (
 	"errors"
 	"fmt"
+	"github.com/ChainSafe/gossamer/lib/runtime/storage"
 
 	"github.com/ChainSafe/gossamer/dot/network"
 	"github.com/ChainSafe/gossamer/dot/peerset"
@@ -16,20 +17,11 @@ import (
 	"github.com/libp2p/go-libp2p-core/peer"
 )
 
-func (s *Service) validateTransaction(peerID peer.ID, head *types.Header, rt runtime.Instance,
+func (s *Service) validateTransaction(peerID peer.ID, head *types.Header, rt runtime.Instance, ts *storage.TrieState,
 	tx types.Extrinsic) (validity *transaction.Validity, valid bool, err error) {
-	s.storageState.Lock()
-
-	ts, err := s.storageState.TrieState(&head.StateRoot)
-	s.storageState.Unlock()
-	if err != nil {
-		return nil, false, fmt.Errorf("cannot get trie state from storage for root %s: %w", head.StateRoot, err)
-	}
-
-	rt.SetContextStorage(ts)
 
 	// validate each transaction
-	externalExt, err := s.buildTransaction(rt, tx)
+	externalExt, err := s.buildExternalTransaction(rt, tx)
 	if err != nil {
 		logger.Errorf("Unable to build transaction \n")
 	}
@@ -75,15 +67,25 @@ func (s *Service) HandleTransactionMessage(peerID peer.ID, msg *network.Transact
 		return false, err
 	}
 
+	s.storageState.Lock()
+
+	ts, err := s.storageState.TrieState(&head.StateRoot)
+	s.storageState.Unlock()
+	if err != nil {
+		return false, fmt.Errorf("cannot get trie state from storage for root %s: %w", head.StateRoot, err)
+	}
+
 	hash := head.Hash()
 	rt, err := s.blockState.GetRuntime(&hash)
 	if err != nil {
 		return false, err
 	}
 
+	rt.SetContextStorage(ts)
+
 	allTxsAreValid := true
 	for _, tx := range txs {
-		validity, isValidTxn, err := s.validateTransaction(peerID, head, rt, tx)
+		validity, isValidTxn, err := s.validateTransaction(peerID, head, rt, ts, tx)
 		if err != nil {
 			return false, fmt.Errorf("failed validating transaction for peerID %s: %w", peerID, err)
 		}

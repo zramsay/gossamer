@@ -35,8 +35,8 @@ import (
 
 var errTestDummyError = errors.New("test dummy error")
 var testAPIItem = runtime.APIItem{
-	Name: [8]byte{1, 2, 3, 4, 5, 6, 7, 8},
-	Ver:  99,
+	Name: [8]byte{0xd2, 0xbc, 0x98, 0x97, 0xee, 0xd0, 0x8f, 0x15},
+	Ver:  3,
 }
 var runtimeVersionData = runtime.NewVersionData(
 	[]byte("polkadot"),
