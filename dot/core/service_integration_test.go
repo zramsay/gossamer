@@ -127,8 +127,9 @@ func generateTestValidRemarkTxns(t *testing.T, pubKey []byte, accInfo types.Acco
 		0, "System.remark", testCallArguments)
 
 	extBytes := common.MustHexToBytes(extHex)
-	const txnType = byte(types.TxnExternal)
-	extBytes = append([]byte{txnType}, extBytes...)
+	//const txnType = byte(types.TxnExternal)
+	//extBytes = append([]byte{txnType}, extBytes...)
+	//extBytes = append([]byte{txnType}, append(extBytes, genesisHeader.Hash().ToBytes()...)...)
 
 	runtime.InitializeRuntimeToTest(t, rt, genesisHeader.Hash())
 	return extBytes, rt
