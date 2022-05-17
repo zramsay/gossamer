@@ -29,7 +29,10 @@ func (s *Service) validateTransaction(peerID peer.ID, head *types.Header, rt run
 	rt.SetContextStorage(ts)
 
 	// validate each transaction
-	externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, tx...))
+	externalExt, err := s.buildTransaction(rt, tx)
+	if err != nil {
+		logger.Errorf("Unable to build transaction \n")
+	}
 	validity, err = rt.ValidateTransaction(externalExt)
 	if err != nil {
 		if errors.Is(err, runtime.ErrInvalidTransaction) {

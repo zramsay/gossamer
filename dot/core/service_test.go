@@ -34,6 +34,19 @@ import (
 )
 
 var errTestDummyError = errors.New("test dummy error")
+var testAPIItem = runtime.APIItem{
+	Name: [8]byte{1, 2, 3, 4, 5, 6, 7, 8},
+	Ver:  99,
+}
+var runtimeVersionData = runtime.NewVersionData(
+	[]byte("polkadot"),
+	[]byte("parity-polkadot"),
+	authoringVersion,
+	specVersion,
+	implVersion,
+	[]runtime.APIItem{testAPIItem},
+	transactionVersion,
+)
 
 const (
 	authoringVersion   = 0
@@ -61,19 +74,7 @@ func generateExtrinsic(t *testing.T) (extrinsic, externalExtrinsic types.Extrins
 	t.Helper()
 	meta := generateTestCentrifugeMetadata(t)
 
-	testAPIItem := runtime.APIItem{
-		Name: [8]byte{1, 2, 3, 4, 5, 6, 7, 8},
-		Ver:  99,
-	}
-	rv := runtime.NewVersionData(
-		[]byte("polkadot"),
-		[]byte("parity-polkadot"),
-		authoringVersion,
-		specVersion,
-		implVersion,
-		[]runtime.APIItem{testAPIItem},
-		transactionVersion,
-	)
+	rv := runtimeVersionData
 
 	keyring, err := keystore.NewSr25519Keyring()
 	require.NoError(t, err)
@@ -1123,6 +1124,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 		mockTxnState.EXPECT().Exists(types.Extrinsic{})
 
 		runtimeMockErr.On("SetContextStorage", &rtstorage.TrieState{})
+		runtimeMockErr.On("Version").Return(runtimeVersionData, nil)
 		runtimeMockErr.On("ValidateTransaction", externalExt).Return(nil, errDummyErr)
 		service := &Service{
 			storageState:     mockStorageState,
@@ -1142,6 +1144,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 		mockBlockState.EXPECT().BestBlockHash().Return(common.Hash{})
 		mockBlockState.EXPECT().GetRuntime(&common.Hash{}).Return(runtimeMock, nil).MaxTimes(2)
 		runtimeMock.On("SetContextStorage", &rtstorage.TrieState{})
+		runtimeMock.On("Version").Return(runtimeVersionData, nil)
 		runtimeMock.On("ValidateTransaction", externalExt).
 			Return(&transaction.Validity{Propagate: true}, nil)
 
@@ -1160,7 +1163,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 			blockState:       mockBlockState,
 			net:              mockNetState,
 		}
-		execTest(t, service, types.Extrinsic{}, nil)
+		execTest(t, service, ext, nil)
 	})
 }
 
