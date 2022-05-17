@@ -418,6 +418,7 @@ func (s *Service) maintainTransactionPool(block *types.Block) {
 		ts, err := s.storageState.TrieState(nil)
 		if err != nil {
 			logger.Critical("failed to get trie state")
+			continue
 		}
 
 		rt, err := s.blockState.GetRuntime(nil)
