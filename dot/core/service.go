@@ -680,6 +680,7 @@ func (s *Service) buildExternalTransaction(rt runtime.Instance, ext types.Extrin
 		externalExt = types.Extrinsic(append([]byte{byte(types.TxnExternal)}, ext...))
 		externalExt = append(externalExt, s.blockState.BestBlockHash().ToBytes()...)
 	} else {
+		logger.Errorf("invalid transactionQueue version: %v\n", txQueueVersion)
 		return types.Extrinsic{}, errInvalidTransactionQueueVersion
 	}
 	return externalExt, nil
