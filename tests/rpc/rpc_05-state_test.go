@@ -61,7 +61,7 @@ func TestStateRPCResponseValidation(t *testing.T) {
 				blockHash),
 			expected: modules.StorageChangeSetResponse{
 				Block:   &blockHash,
-				Changes: [][]string{},
+				Changes: [][]*string{},
 			},
 			skip: true,
 		},
