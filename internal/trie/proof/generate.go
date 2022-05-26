@@ -4,61 +4,109 @@
 package proof
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 
-	"github.com/ChainSafe/chaindb"
 	"github.com/ChainSafe/gossamer/internal/trie/codec"
+	"github.com/ChainSafe/gossamer/internal/trie/node"
 	"github.com/ChainSafe/gossamer/lib/common"
 	"github.com/ChainSafe/gossamer/lib/trie"
 )
 
 var (
-	// ErrEmptyTrieRoot ...
-	ErrEmptyTrieRoot = errors.New("provided trie must have a root")
-
-	// ErrValueNotFound ...
-	ErrValueNotFound = errors.New("expected value not found in the trie")
-
-	// ErrKeyNotFound ...
-	ErrKeyNotFound = errors.New("expected key not found in the trie")
-
-	// ErrDuplicateKeys ...
-	ErrDuplicateKeys = errors.New("duplicate keys on verify proof")
-
-	// ErrLoadFromProof ...
-	ErrLoadFromProof = errors.New("failed to build the proof trie")
+	ErrKeyNotFound = errors.New("key not found")
 )
 
-// Generate receive the keys to proof, the trie root and a reference to database
-func Generate(root []byte, keys [][]byte, db chaindb.Database) ([][]byte, error) {
-	trackedProofs := make(map[string][]byte)
+// Database defines a key value Get method used
+// for proof generation.
+type Database interface {
+	Get(key []byte) (value []byte, err error)
+}
 
-	proofTrie := trie.NewEmptyTrie()
-	if err := proofTrie.Load(db, common.BytesToHash(root)); err != nil {
-		return nil, err
+// Generate returns the encoded proof nodes for the trie
+// corresponding to the root hash given, and for the (Little Endian)
+// full key given. The database given is used to load the trie
+// using the root hash given.
+func Generate(rootHash common.Hash, fullKey []byte, database Database) (
+	encodedProofNodes [][]byte, err error) {
+	trie := trie.NewEmptyTrie()
+	if err := trie.Load(database, rootHash); err != nil {
+		return nil, fmt.Errorf("cannot load trie: %w", err)
 	}
 
-	for _, k := range keys {
-		nk := codec.KeyLEToNibbles(k)
+	rootNode := trie.RootNode()
+	const isCurrentRoot = true
+	fullKeyNibbles := codec.KeyLEToNibbles(fullKey)
+	encodedProofNodes, err = walk(rootNode, isCurrentRoot, fullKeyNibbles)
+	if err != nil {
+		// Note we wrap the full key context here since find is recursive and
+		// may not be aware of the initial full key.
+		return nil, fmt.Errorf("cannot find node at key 0x%x in trie: %w", fullKey, err)
+	}
 
-		recorder := newRecorder()
-		err := findAndRecord(proofTrie, nk, recorder)
-		if err != nil {
-			return nil, err
+	return encodedProofNodes, nil
+}
+
+// TODO use pointer to slice to avoid recursive appending
+func walk(parent node.Node, isCurrentRoot bool, fullKey []byte) (
+	encodedProofNodes [][]byte, err error) {
+	if parent == nil {
+		return nil, nil
+	}
+
+	encoding, _, err := parent.EncodeAndHash(isCurrentRoot)
+	if err != nil {
+		return nil, fmt.Errorf("cannot encode and hash node: %w", err)
+	}
+
+	encodedProofNodes = append(encodedProofNodes, encoding)
+
+	switch parent.Type() {
+	case node.BranchType, node.BranchWithValueType:
+	default: // not a branch
+		return encodedProofNodes, nil
+	}
+
+	b := parent.(*node.Branch)
+
+	length := lenCommonPrefix(b.Key, fullKey)
+
+	nodeFound := len(fullKey) == 0 || bytes.Equal(b.Key, fullKey)
+	if nodeFound {
+		return encodedProofNodes, nil
+	}
+
+	nodeIsDeeper := !bytes.Equal(b.Key[:length], fullKey) || len(fullKey) >= len(b.Key)
+	if !nodeIsDeeper {
+		return nil, ErrKeyNotFound
+	}
+
+	isCurrentRoot = false
+	deeperEncodedProofNodes, err := walk(
+		b.Children[fullKey[length]], isCurrentRoot,
+		fullKey[length+1:])
+	if err != nil {
+		return nil, err // note: do not wrap since this is recursive
+	}
+
+	encodedProofNodes = append(encodedProofNodes, deeperEncodedProofNodes...)
+	return encodedProofNodes, nil
+}
+
+// lenCommonPrefix returns the length of the
+// common prefix between two byte slices.
+func lenCommonPrefix(a, b []byte) (length int) {
+	min := len(a)
+	if len(b) < min {
+		min = len(b)
+	}
+
+	for length = 0; length < min; length++ {
+		if a[length] != b[length] {
+			break
 		}
-
-		for _, recNode := range recorder.getNodes() {
-			nodeHashHex := common.BytesToHex(recNode.Hash)
-			if _, ok := trackedProofs[nodeHashHex]; !ok {
-				trackedProofs[nodeHashHex] = recNode.RawData
-			}
-		}
 	}
 
-	proofs := make([][]byte, 0)
-	for _, p := range trackedProofs {
-		proofs = append(proofs, p)
-	}
-
-	return proofs, nil
+	return length
 }
