@@ -105,7 +105,11 @@ func (t *Trie) LoadFromProof(encodedProofNodes [][]byte, rootHash []byte) error 
 		decodedNode.SetDirty(dirty)
 		decodedNode.SetEncodingAndHash(rawNode, nil)
 
-		_, hash, err := decodedNode.EncodeAndHash(false)
+		// isRoot is set to true in order to force the hash to be the blake2b
+		// digest for every node from the proof and not the smaller than 32 bytes
+		// encoded value, since we do not know which node in the proof is the root node.
+		const isRoot = false // TODO
+		_, hash, err := decodedNode.EncodeAndHash(isRoot)
 		if err != nil {
 			return fmt.Errorf("cannot encode and hash node at index %d: %w", i, err)
 		}
