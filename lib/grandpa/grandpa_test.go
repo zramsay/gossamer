@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ChainSafe/gossamer/lib/grandpa/mocks"
+	"github.com/ChainSafe/gossamer/lib/grandpa/models"
 )
 
 // testGenesisHeader is a test block header
@@ -83,10 +84,10 @@ func newTestState(t *testing.T) *state.Service {
 	}
 }
 
-func newTestVoters() []Voter {
-	vs := []Voter{}
+func newTestVoters() []models.Voter {
+	vs := []models.Voter{}
 	for i, k := range kr.Keys {
-		vs = append(vs, Voter{
+		vs = append(vs, models.Voter{
 			Key: *k.Public().(*ed25519.PublicKey),
 			ID:  uint64(i),
 		})
@@ -124,9 +125,9 @@ func TestUpdateAuthorities(t *testing.T) {
 	gs, _ := newTestService(t)
 	err := gs.updateAuthorities()
 	require.NoError(t, err)
-	require.Equal(t, uint64(0), gs.state.setID)
+	require.Equal(t, uint64(0), gs.state.SetID)
 
-	next := []Voter{
+	next := []models.Voter{
 		{Key: *kr.Alice().Public().(*ed25519.PublicKey), ID: 0},
 	}
 
@@ -139,19 +140,19 @@ func TestUpdateAuthorities(t *testing.T) {
 	err = gs.updateAuthorities()
 	require.NoError(t, err)
 
-	require.Equal(t, uint64(1), gs.state.setID)
-	require.Equal(t, next, gs.state.voters)
+	require.Equal(t, uint64(1), gs.state.SetID)
+	require.Equal(t, next, gs.state.Voters)
 }
 
 func TestGetDirectVotes(t *testing.T) {
 	gs, _ := newTestService(t)
 
-	voteA := Vote{
+	voteA := models.Vote{
 		Hash:   common.Hash{0xa},
 		Number: 1,
 	}
 
-	voteB := Vote{
+	voteB := models.Vote{
 		Hash:   common.Hash{0xb},
 		Number: 1,
 	}
@@ -160,17 +161,17 @@ func TestGetDirectVotes(t *testing.T) {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 5 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: voteB,
 			})
 		}
 	}
 
-	directVotes := gs.getDirectVotes(prevote)
+	directVotes := gs.getDirectVotes(models.Prevote)
 	require.Equal(t, 2, len(directVotes))
 	require.Equal(t, uint64(5), directVotes[voteA])
 	require.Equal(t, uint64(4), directVotes[voteB])
@@ -184,30 +185,30 @@ func TestGetVotesForBlock_NoDescendantVotes(t *testing.T) {
 	leaves := gs.blockState.Leaves()
 
 	// 1/3 of voters equivocate; ie. vote for both blocks
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 5 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
 	}
 
-	votesForA, err := gs.getVotesForBlock(voteA.Hash, prevote)
+	votesForA, err := gs.getVotesForBlock(voteA.Hash, models.Prevote)
 	require.NoError(t, err)
 	require.Equal(t, uint64(5), votesForA)
 
-	votesForB, err := gs.getVotesForBlock(voteB.Hash, prevote)
+	votesForB, err := gs.getVotesForBlock(voteB.Hash, models.Prevote)
 	require.NoError(t, err)
 	require.Equal(t, uint64(4), votesForB)
 }
@@ -223,41 +224,41 @@ func TestGetVotesForBlock_DescendantVotes(t *testing.T) {
 	require.NoError(t, err)
 
 	// A is a descendant of B
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(a.ParentHash, st.Block)
+	voteB, err := models.NewVoteFromHash(a.ParentHash, st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[1], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 5 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
 	}
 
-	votesForA, err := gs.getVotesForBlock(voteA.Hash, prevote)
+	votesForA, err := gs.getVotesForBlock(voteA.Hash, models.Prevote)
 	require.NoError(t, err)
 	require.Equal(t, uint64(3), votesForA)
 
 	// votesForB should be # of votes for A + # of votes for B
-	votesForB, err := gs.getVotesForBlock(voteB.Hash, prevote)
+	votesForB, err := gs.getVotesForBlock(voteB.Hash, models.Prevote)
 	require.NoError(t, err)
 	require.Equal(t, uint64(5), votesForB)
 
-	votesForC, err := gs.getVotesForBlock(voteC.Hash, prevote)
+	votesForC, err := gs.getVotesForBlock(voteC.Hash, models.Prevote)
 	require.NoError(t, err)
 	require.Equal(t, uint64(4), votesForC)
 }
@@ -273,37 +274,37 @@ func TestGetPossibleSelectedAncestors_SameAncestor(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
 	}
 
-	votes := gs.getVotes(prevote)
+	votes := gs.getVotes(models.Prevote)
 	prevoted := make(map[common.Hash]uint32)
 	var blocks map[common.Hash]uint32
 
 	for _, curr := range leaves {
-		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, prevote, gs.state.threshold())
+		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, models.Prevote, gs.state.Threshold())
 		require.NoError(t, err)
 	}
 
@@ -327,37 +328,37 @@ func TestGetPossibleSelectedAncestors_VaryingAncestor(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
 	}
 
-	votes := gs.getVotes(prevote)
+	votes := gs.getVotes(models.Prevote)
 	prevoted := make(map[common.Hash]uint32)
 	var blocks map[common.Hash]uint32
 
 	for _, curr := range leaves {
-		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, prevote, gs.state.threshold())
+		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, models.Prevote, gs.state.Threshold())
 		require.NoError(t, err)
 	}
 
@@ -381,43 +382,43 @@ func TestGetPossibleSelectedAncestors_VaryingAncestor_MoreBranches(t *testing.T)
 	require.Equal(t, 4, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
-	voteD, err := NewVoteFromHash(leaves[3], st.Block)
+	voteD, err := models.NewVoteFromHash(leaves[3], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else if i < 8 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteD,
 			})
 		}
 	}
 
-	votes := gs.getVotes(prevote)
+	votes := gs.getVotes(models.Prevote)
 	prevoted := make(map[common.Hash]uint32)
 	var blocks map[common.Hash]uint32
 
 	for _, curr := range leaves {
-		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, prevote, gs.state.threshold())
+		blocks, err = gs.getPossibleSelectedAncestors(votes, curr, prevoted, models.Prevote, gs.state.Threshold())
 		require.NoError(t, err)
 	}
 
@@ -437,26 +438,26 @@ func TestGetPossibleSelectedBlocks_OneBlock(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
 	}
 
-	blocks, err := gs.getPossibleSelectedBlocks(prevote, gs.state.threshold())
+	blocks, err := gs.getPossibleSelectedBlocks(models.Prevote, gs.state.Threshold())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(blocks))
 	require.Equal(t, voteA.Number, blocks[voteA.Hash])
@@ -473,32 +474,32 @@ func TestGetPossibleSelectedBlocks_EqualVotes_SameAncestor(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
 	}
 
-	blocks, err := gs.getPossibleSelectedBlocks(prevote, gs.state.threshold())
+	blocks, err := gs.getPossibleSelectedBlocks(models.Prevote, gs.state.Threshold())
 	require.NoError(t, err)
 
 	expected, err := st.Block.GetHashByNumber(6)
@@ -520,32 +521,32 @@ func TestGetPossibleSelectedBlocks_EqualVotes_VaryingAncestor(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
 	}
 
-	blocks, err := gs.getPossibleSelectedBlocks(prevote, gs.state.threshold())
+	blocks, err := gs.getPossibleSelectedBlocks(models.Prevote, gs.state.Threshold())
 	require.NoError(t, err)
 
 	expectedAt6, err := st.Block.GetHashByNumber(6)
@@ -565,15 +566,15 @@ func TestGetPossibleSelectedBlocks_OneThirdEquivocating(t *testing.T) {
 	leaves := gs.blockState.Leaves()
 
 	// 1/3 of voters equivocate; ie. vote for both blocks
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
-	svA := &SignedVote{
+	svA := &models.SignedVote{
 		Vote: *voteA,
 	}
-	svB := &SignedVote{
+	svB := &models.SignedVote{
 		Vote: *voteB,
 	}
 
@@ -585,14 +586,14 @@ func TestGetPossibleSelectedBlocks_OneThirdEquivocating(t *testing.T) {
 		} else if i < 6 {
 			gs.prevotes.Store(voter, svB)
 		} else {
-			gs.pvEquivocations[voter] = []*SignedVote{svA, svB}
+			gs.pvEquivocations[voter] = []*models.SignedVote{svA, svB}
 		}
 	}
 
 	expectedAt6, err := st.Block.GetHashByNumber(6)
 	require.NoError(t, err)
 
-	blocks, err := gs.getPossibleSelectedBlocks(prevote, gs.state.threshold())
+	blocks, err := gs.getPossibleSelectedBlocks(models.Prevote, gs.state.Threshold())
 	require.NoError(t, err)
 	require.Equal(t, 1, len(blocks))
 	require.Equal(t, uint32(6), blocks[expectedAt6])
@@ -606,17 +607,17 @@ func TestGetPossibleSelectedBlocks_MoreThanOneThirdEquivocating(t *testing.T) {
 	leaves := gs.blockState.Leaves()
 
 	// this tests a byzantine case where >1/3 of voters equivocate; ie. vote for multiple blocks
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
-	svA := &SignedVote{
+	svA := &models.SignedVote{
 		Vote: *voteA,
 	}
-	svB := &SignedVote{
+	svB := &models.SignedVote{
 		Vote: *voteB,
 	}
 
@@ -631,16 +632,16 @@ func TestGetPossibleSelectedBlocks_MoreThanOneThirdEquivocating(t *testing.T) {
 			gs.prevotes.Store(voter, svB)
 		} else if i < 5 {
 			// 1 vote for C
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		} else {
 			// 4 equivocators
-			gs.pvEquivocations[voter] = []*SignedVote{svA, svB}
+			gs.pvEquivocations[voter] = []*models.SignedVote{svA, svB}
 		}
 	}
 
-	blocks, err := gs.getPossibleSelectedBlocks(prevote, gs.state.threshold())
+	blocks, err := gs.getPossibleSelectedBlocks(models.Prevote, gs.state.Threshold())
 	require.NoError(t, err)
 	require.Equal(t, 2, len(blocks))
 }
@@ -652,20 +653,20 @@ func TestGetPreVotedBlock_OneBlock(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -687,26 +688,26 @@ func TestGetPreVotedBlock_MultipleCandidates(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
@@ -737,44 +738,44 @@ func TestGetPreVotedBlock_EvenMoreCandidates(t *testing.T) {
 	})
 
 	// voters vote for a blocks on a different chains
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
-	voteD, err := NewVoteFromHash(leaves[3], st.Block)
+	voteD, err := models.NewVoteFromHash(leaves[3], st.Block)
 	require.NoError(t, err)
-	voteE, err := NewVoteFromHash(leaves[4], st.Block)
+	voteE, err := models.NewVoteFromHash(leaves[4], st.Block)
 	require.NoError(t, err)
-	voteF, err := NewVoteFromHash(leaves[5], st.Block)
+	voteF, err := models.NewVoteFromHash(leaves[5], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 2 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 4 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		} else if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteD,
 			})
 		} else if i < 8 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteE,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteF,
 			})
 		}
@@ -797,26 +798,26 @@ func TestIsCompletable(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -834,7 +835,7 @@ func TestFindParentWithNumber(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, nil)
 	leaves := gs.blockState.Leaves()
 
-	v, err := NewVoteFromHash(leaves[0], st.Block)
+	v, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
 
 	p, err := gs.findParentWithNumber(v, 1)
@@ -854,26 +855,26 @@ func TestGetBestFinalCandidate_OneBlock(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -892,9 +893,9 @@ func TestGetBestFinalCandidate_PrecommitAncestor(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	// in precommit round, 2/3 voters will vote for ancestor of A
@@ -905,17 +906,17 @@ func TestGetBestFinalCandidate_PrecommitAncestor(t *testing.T) {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -935,23 +936,23 @@ func TestGetBestFinalCandidate_NoPrecommit(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 7 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -971,26 +972,26 @@ func TestGetBestFinalCandidate_PrecommitOnAnotherChain(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		}
@@ -1026,15 +1027,15 @@ func TestDeterminePreVote_WithPrimaryPreVote(t *testing.T) {
 
 	derivePrimary := gs.derivePrimary()
 	primary := derivePrimary.PublicKeyBytes()
-	gs.prevotes.Store(primary, &SignedVote{
-		Vote: *NewVoteFromHeader(header),
+	gs.prevotes.Store(primary, &models.SignedVote{
+		Vote: *models.NewVoteFromHeader(header),
 	})
 
 	pv, err := gs.determinePreVote()
 	require.NoError(t, err)
 	p, has := gs.prevotes.Load(primary)
 	require.True(t, has)
-	require.Equal(t, pv, &p.(*SignedVote).Vote)
+	require.Equal(t, pv, &p.(*models.SignedVote).Vote)
 }
 
 func TestDeterminePreVote_WithInvalidPrimaryPreVote(t *testing.T) {
@@ -1046,8 +1047,8 @@ func TestDeterminePreVote_WithInvalidPrimaryPreVote(t *testing.T) {
 
 	derivePrimary := gs.derivePrimary()
 	primary := derivePrimary.PublicKeyBytes()
-	gs.prevotes.Store(primary, &SignedVote{
-		Vote: *NewVoteFromHeader(header),
+	gs.prevotes.Store(primary, &models.SignedVote{
+		Vote: *models.NewVoteFromHeader(header),
 	})
 
 	state.AddBlocksToState(t, st.Block, 5, false)
@@ -1066,32 +1067,32 @@ func TestIsFinalisable_True(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
 	}
 
-	finalisable, err := gs.isFinalisable(gs.state.round)
+	finalisable, err := gs.isFinalisable(gs.state.Round)
 	require.NoError(t, err)
 	require.True(t, finalisable)
 }
@@ -1104,39 +1105,39 @@ func TestIsFinalisable_False(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 3, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 6 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
-			gs.precommits.Store(voter, &SignedVote{
+			gs.precommits.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
 	}
 
 	// previous round has finalised block # higher than current, so round is not finalisable
-	gs.state.round = 1
-	gs.bestFinalCandidate[0] = &Vote{
+	gs.state.Round = 1
+	gs.bestFinalCandidate[0] = &models.Vote{
 		Number: 4,
 	}
-	gs.preVotedBlock[gs.state.round] = voteA
+	gs.preVotedBlock[gs.state.Round] = voteA
 
-	finalisable, err := gs.isFinalisable(gs.state.round)
+	finalisable, err := gs.isFinalisable(gs.state.Round)
 	require.NoError(t, err)
 	require.False(t, finalisable)
 }
@@ -1148,20 +1149,20 @@ func TestGetGrandpaGHOST_CommonAncestor(t *testing.T) {
 	state.AddBlocksToStateWithFixedBranches(t, st.Block, 8, branches)
 	leaves := gs.blockState.Leaves()
 
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 4 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 5 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		}
@@ -1185,26 +1186,26 @@ func TestGetGrandpaGHOST_MultipleCandidates(t *testing.T) {
 	require.Equal(t, 3, len(leaves))
 
 	// 1/3 voters each vote for a block on a different chain
-	voteA, err := NewVoteFromHash(leaves[0], st.Block)
+	voteA, err := models.NewVoteFromHash(leaves[0], st.Block)
 	require.NoError(t, err)
-	voteB, err := NewVoteFromHash(leaves[1], st.Block)
+	voteB, err := models.NewVoteFromHash(leaves[1], st.Block)
 	require.NoError(t, err)
-	voteC, err := NewVoteFromHash(leaves[2], st.Block)
+	voteC, err := models.NewVoteFromHash(leaves[2], st.Block)
 	require.NoError(t, err)
 
 	for i, k := range kr.Keys {
 		voter := k.Public().(*ed25519.PublicKey).AsBytes()
 
 		if i < 1 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteA,
 			})
 		} else if i < 2 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteB,
 			})
 		} else if i < 3 {
-			gs.prevotes.Store(voter, &SignedVote{
+			gs.prevotes.Store(voter, &models.SignedVote{
 				Vote: *voteC,
 			})
 		}
@@ -1254,7 +1255,7 @@ func TestGrandpaServiceCreateJustification_ShouldCountEquivocatoryVotes(t *testi
 	var totalLegitVotes int
 	// voting on
 	for _, v := range fakeAuthorities {
-		vote := &SignedVote{
+		vote := &models.SignedVote{
 			AuthorityID: v.Public().(*ed25519.PublicKey).AsBytes(),
 			Vote: types.GrandpaVote{
 				Hash:   bfcHash,
@@ -1282,7 +1283,7 @@ func TestGrandpaServiceCreateJustification_ShouldCountEquivocatoryVotes(t *testi
 	gs.pvEquivocations = equivocatories
 	gs.prevotes = prevotes
 
-	justifications, err := gs.createJustification(bfcHash, prevote)
+	justifications, err := gs.createJustification(bfcHash, models.Prevote)
 	require.NoError(t, err)
 
 	var totalEqvVotes int
