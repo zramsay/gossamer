@@ -120,7 +120,7 @@ func generateExtrinsic(t *testing.T) (extrinsic, externalExtrinsic types.Extrins
 }
 
 func Test_Service_StorageRoot(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	emptyTrie := trie.NewEmptyTrie()
 	ts, err := rtstorage.NewTrieState(emptyTrie)
 	require.NoError(t, err)
@@ -181,7 +181,7 @@ func Test_Service_StorageRoot(t *testing.T) {
 }
 
 func Test_Service_handleCodeSubstitution(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	newTestInstance := func(code []byte, cfg *wasmer.Config) (*wasmer.Instance, error) {
 		return &wasmer.Instance{}, nil
 	}
@@ -277,7 +277,7 @@ func Test_Service_handleCodeSubstitution(t *testing.T) {
 }
 
 func Test_Service_handleBlock(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 
 	execTest := func(t *testing.T, s *Service, block *types.Block, trieState *rtstorage.TrieState, expErr error) {
 		err := s.handleBlock(block, trieState)
@@ -437,7 +437,7 @@ func Test_Service_handleBlock(t *testing.T) {
 }
 
 func Test_Service_HandleBlockProduced(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, block *types.Block, trieState *rtstorage.TrieState, expErr error) {
 		err := s.HandleBlockProduced(block, trieState)
 		assert.ErrorIs(t, err, expErr)
@@ -500,7 +500,7 @@ func Test_Service_HandleBlockProduced(t *testing.T) {
 }
 
 func Test_Service_maintainTransactionPool(t *testing.T) {
-	t.Parallel()
+//	t.Parallel()
 	t.Run("Validate Transaction err", func(t *testing.T) {
 		t.Parallel()
 		testHeader := types.NewEmptyHeader()
@@ -601,7 +601,7 @@ func Test_Service_maintainTransactionPool(t *testing.T) {
 }
 
 func Test_Service_handleBlocksAsync(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	t.Run("cancelled context", func(t *testing.T) {
 		t.Parallel()
 		ctrl := gomock.NewController(t)
@@ -708,7 +708,7 @@ func Test_Service_handleBlocksAsync(t *testing.T) {
 }
 
 func TestService_handleChainReorg(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, prevHash common.Hash, currHash common.Hash, expErr error) {
 		err := s.handleChainReorg(prevHash, currHash)
 		assert.ErrorIs(t, err, expErr)
@@ -869,7 +869,7 @@ func TestService_handleChainReorg(t *testing.T) {
 }
 
 func TestServiceInsertKey(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	keyStore := keystore.GlobalKeystore{
 		Babe: keystore.NewBasicKeystore(keystore.BabeName, crypto.Sr25519Type),
 	}
@@ -924,7 +924,7 @@ func TestServiceInsertKey(t *testing.T) {
 }
 
 func TestServiceHasKey(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	keyStore := keystore.GlobalKeystore{
 		Babe: keystore.NewBasicKeystore(keystore.BabeName, crypto.Sr25519Type),
 	}
@@ -981,7 +981,7 @@ func TestServiceHasKey(t *testing.T) {
 }
 
 func TestService_DecodeSessionKeys(t *testing.T) {
-	t.Parallel()
+//	t.Parallel()
 	testEncKeys := []byte{1, 2, 3, 4}
 	execTest := func(t *testing.T, s *Service, enc []byte, exp []byte, expErr error) {
 		res, err := s.DecodeSessionKeys(enc)
@@ -1018,7 +1018,7 @@ func TestService_DecodeSessionKeys(t *testing.T) {
 }
 
 func TestServiceGetRuntimeVersion(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	testAPIItem := runtime.APIItem{
 		Name: [8]byte{1, 2, 3, 4, 5, 6, 7, 8},
 		Ver:  99,
@@ -1111,7 +1111,7 @@ func TestServiceGetRuntimeVersion(t *testing.T) {
 }
 
 func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	ext := types.Extrinsic{}
 
 	testHeader := types.NewEmptyHeader()
@@ -1241,7 +1241,7 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 }
 
 func TestServiceGetMetadata(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, bhash *common.Hash, exp []byte, expErr error) {
 		res, err := s.GetMetadata(bhash)
 		assert.ErrorIs(t, err, expErr)
@@ -1314,7 +1314,7 @@ func TestServiceGetMetadata(t *testing.T) {
 }
 
 func TestService_tryQueryStorage(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, block common.Hash, keys []string, exp QueryKeyValueChanges, expErr error) {
 		res, err := s.tryQueryStorage(block, keys...)
 		assert.ErrorIs(t, err, expErr)
@@ -1364,7 +1364,7 @@ func TestService_tryQueryStorage(t *testing.T) {
 }
 
 func TestService_QueryStorage(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, from common.Hash, to common.Hash,
 		keys []string, exp map[common.Hash]QueryKeyValueChanges, expErr error) {
 		res, err := s.QueryStorage(from, to, keys...)
@@ -1410,7 +1410,7 @@ func TestService_QueryStorage(t *testing.T) {
 }
 
 func TestService_GetReadProofAt(t *testing.T) {
-	t.Parallel()
+	//t.Parallel()
 	execTest := func(t *testing.T, s *Service, block common.Hash, keys [][]byte,
 		expHash common.Hash, expProofForKeys [][]byte, expErr error) {
 		resHash, resProofForKeys, err := s.GetReadProofAt(block, keys)

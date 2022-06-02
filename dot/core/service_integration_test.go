@@ -583,7 +583,7 @@ func TestService_HandleSubmittedExtrinsic(t *testing.T) {
 	ctrl := gomock.NewController(t)
 
 	net := NewMockNetwork(ctrl)
-	//net.EXPECT().GossipMessage(gomock.AssignableToTypeOf(new(network.TransactionMessage)))
+	net.EXPECT().GossipMessage(gomock.AssignableToTypeOf(new(network.TransactionMessage)))
 	cfg.Network = net
 	s := NewTestService(t, cfg)
 
@@ -606,8 +606,8 @@ func TestService_HandleSubmittedExtrinsic(t *testing.T) {
 
 	// Tests use old extrinsic version currently
 	err = s.HandleSubmittedExtrinsic(extBytes)
-	require.Equal(t, errInvalidTransactionQueueVersion, err)
-	//require.NoError(t, err)
+	//require.Equal(t, errInvalidTransactionQueueVersion, err)
+	require.NoError(t, err)
 }
 
 func TestService_GetMetadata(t *testing.T) {
