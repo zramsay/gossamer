@@ -21,7 +21,7 @@ func (s *Service) validateTransaction(peerID peer.ID, head *types.Header, rt run
 	tx types.Extrinsic) (validity *transaction.Validity, valid bool, err error) {
 
 	// validate each transaction
-	externalExt, err := s.buildExternalTransaction(rt, tx)
+	externalExt, err := s.BuildExternalTransaction(rt, tx)
 	if err != nil {
 		logger.Errorf("Unable to build transaction \n")
 	}

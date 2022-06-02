@@ -381,7 +381,7 @@ func (s *Service) handleChainReorg(prev, curr common.Hash) error {
 				continue
 			}
 
-			externalExt, err := s.buildExternalTransaction(rt, ext)
+			externalExt, err := s.BuildExternalTransaction(rt, ext)
 			if err != nil {
 				return err
 			}
@@ -429,7 +429,7 @@ func (s *Service) maintainTransactionPool(block *types.Block) {
 
 		rt.SetContextStorage(ts)
 
-		externalExt, err := s.buildExternalTransaction(rt, tx.Extrinsic)
+		externalExt, err := s.BuildExternalTransaction(rt, tx.Extrinsic)
 		if err != nil {
 			logger.Errorf("Unable to build transaction \n")
 		}
@@ -542,7 +542,7 @@ func (s *Service) HandleSubmittedExtrinsic(ext types.Extrinsic) error {
 
 	rt.SetContextStorage(ts)
 	// the transaction source is External
-	externalExt, err := s.buildExternalTransaction(rt, ext)
+	externalExt, err := s.BuildExternalTransaction(rt, ext)
 	if err != nil {
 		return err
 	}
@@ -668,7 +668,7 @@ func (s *Service) GetReadProofAt(block common.Hash, keys [][]byte) (
 	return block, proofForKeys, nil
 }
 
-func (s *Service) buildExternalTransaction(rt runtime.Instance, ext types.Extrinsic) (types.Extrinsic, error) {
+func (s *Service) BuildExternalTransaction(rt runtime.Instance, ext types.Extrinsic) (types.Extrinsic, error) {
 	runtimeVersion, err := rt.Version()
 	if err != nil {
 		return types.Extrinsic{}, err
@@ -679,6 +679,8 @@ func (s *Service) buildExternalTransaction(rt runtime.Instance, ext types.Extrin
 	if txQueueVersion == 3 {
 		externalExt = types.Extrinsic(append([]byte{byte(types.TxnExternal)}, ext...))
 		externalExt = append(externalExt, s.blockState.BestBlockHash().ToBytes()...)
+	} else if txQueueVersion == 2 {
+		externalExt = types.Extrinsic(append([]byte{byte(types.TxnExternal)}, ext...))
 	} else {
 		logger.Errorf("invalid transactionQueue version: %v\n", txQueueVersion)
 		return types.Extrinsic{}, errInvalidTransactionQueueVersion
