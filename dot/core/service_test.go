@@ -500,7 +500,7 @@ func Test_Service_HandleBlockProduced(t *testing.T) {
 }
 
 func Test_Service_maintainTransactionPool(t *testing.T) {
-//	t.Parallel()
+	//	t.Parallel()
 	t.Run("Validate Transaction err", func(t *testing.T) {
 		t.Parallel()
 		testHeader := types.NewEmptyHeader()
@@ -981,7 +981,7 @@ func TestServiceHasKey(t *testing.T) {
 }
 
 func TestService_DecodeSessionKeys(t *testing.T) {
-//	t.Parallel()
+	//	t.Parallel()
 	testEncKeys := []byte{1, 2, 3, 4}
 	execTest := func(t *testing.T, s *Service, enc []byte, exp []byte, expErr error) {
 		res, err := s.DecodeSessionKeys(enc)
