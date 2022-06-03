@@ -1,4 +1,4 @@
-name: docker-stable
+name: docker-stable (skip)
 on:
   pull_request:
     paths-ignore:
