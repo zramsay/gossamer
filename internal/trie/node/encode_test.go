@@ -71,7 +71,8 @@ func Test_Node_Encode(t *testing.T) {
 		},
 		"leaf buffer write error for encoded key": {
 			node: &Node{
-				Key: []byte{1, 2, 3},
+				Key:   []byte{1, 2, 3},
+				Value: []byte{1},
 			},
 			writes: []writeCall{
 				{
@@ -186,8 +187,8 @@ func Test_Node_Encode(t *testing.T) {
 				Key:   []byte{1, 2, 3},
 				Value: []byte{100},
 				Children: []*Node{
-					nil, nil, nil, {Key: []byte{9}},
-					nil, nil, nil, {Key: []byte{11}},
+					nil, nil, nil, {Key: []byte{9}, Value: []byte{1}},
+					nil, nil, nil, {Key: []byte{11}, Value: []byte{1}},
 				},
 			},
 			writes: []writeCall{
@@ -210,8 +211,8 @@ func Test_Node_Encode(t *testing.T) {
 				Key:   []byte{1, 2, 3},
 				Value: []byte{100},
 				Children: []*Node{
-					nil, nil, nil, {Key: []byte{9}},
-					nil, nil, nil, {Key: []byte{11}},
+					nil, nil, nil, {Key: []byte{9}, Value: []byte{1}},
+					nil, nil, nil, {Key: []byte{11}, Value: []byte{1}},
 				},
 			},
 			writes: []writeCall{
@@ -237,8 +238,8 @@ func Test_Node_Encode(t *testing.T) {
 				Key:   []byte{1, 2, 3},
 				Value: []byte{100},
 				Children: []*Node{
-					nil, nil, nil, {Key: []byte{9}},
-					nil, nil, nil, {Key: []byte{11}},
+					nil, nil, nil, {Key: []byte{9}, Value: []byte{1}},
+					nil, nil, nil, {Key: []byte{11}, Value: []byte{1}},
 				},
 			},
 			writes: []writeCall{
@@ -255,7 +256,7 @@ func Test_Node_Encode(t *testing.T) {
 					written: []byte{4, 100},
 				},
 				{ // children
-					written: []byte{12, 65, 9, 0},
+					written: []byte{16, 65, 9, 4, 1},
 					err:     errTest,
 				},
 			},
@@ -269,8 +270,8 @@ func Test_Node_Encode(t *testing.T) {
 				Key:   []byte{1, 2, 3},
 				Value: []byte{100},
 				Children: []*Node{
-					nil, nil, nil, {Key: []byte{9}},
-					nil, nil, nil, {Key: []byte{11}},
+					nil, nil, nil, {Key: []byte{9}, Value: []byte{1}},
+					nil, nil, nil, {Key: []byte{11}, Value: []byte{1}},
 				},
 			},
 			writes: []writeCall{
@@ -287,10 +288,10 @@ func Test_Node_Encode(t *testing.T) {
 					written: []byte{4, 100},
 				},
 				{ // first children
-					written: []byte{12, 65, 9, 0},
+					written: []byte{16, 65, 9, 4, 1},
 				},
 				{ // second children
-					written: []byte{12, 65, 11, 0},
+					written: []byte{16, 65, 11, 4, 1},
 				},
 			},
 		},
