@@ -544,7 +544,9 @@ func TestAuthorModule_SubmitExtrinsic_WithVersion_V0910(t *testing.T) {
 	//extHex = common.BytesToHex(extBytes)
 
 	net2test := coremocks.NewMockNetwork(ctrl)
-	net2test.EXPECT().GossipMessage(&network.TransactionMessage{Extrinsics: []types.Extrinsic{common.MustHexToBytes(extHex)}})
+	net2test.EXPECT().GossipMessage(&network.TransactionMessage{
+		Extrinsics: []types.Extrinsic{common.MustHexToBytes(extHex)},
+	})
 	integrationTestController.network = net2test
 
 	// setup auth module

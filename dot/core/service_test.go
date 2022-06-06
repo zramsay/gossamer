@@ -113,8 +113,8 @@ func generateExtrinsic(t *testing.T) (extrinsic, externalExtrinsic types.Extrins
 
 	encExt := []types.Extrinsic{extEnc.Bytes()}
 	testHeader := types.NewEmptyHeader()
-	testExternalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(encExt[0], testHeader.StateRoot.ToBytes()...)...))
-	//testExternalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, encExt[0]...))
+	testExternalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+		append(encExt[0], testHeader.StateRoot.ToBytes()...)...))
 	testUnencryptedBody := types.NewBody(encExt)
 	return encExt[0], testExternalExt, testUnencryptedBody
 }
@@ -523,7 +523,8 @@ func Test_Service_maintainTransactionPool(t *testing.T) {
 		}
 
 		ext := types.Extrinsic{21}
-		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(ext, testHeader.StateRoot.ToBytes()...)...))
+		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+			append(ext, testHeader.StateRoot.ToBytes()...)...))
 		vt := transaction.NewValidTransaction(ext, validity)
 
 		ctrl := gomock.NewController(t)
@@ -569,7 +570,8 @@ func Test_Service_maintainTransactionPool(t *testing.T) {
 		}
 
 		ext := types.Extrinsic{21}
-		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(ext, testHeader.StateRoot.ToBytes()...)...))
+		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+			append(ext, testHeader.StateRoot.ToBytes()...)...))
 		vt := transaction.NewValidTransaction(ext, validity)
 		tx := transaction.NewValidTransaction(ext, &transaction.Validity{Propagate: true})
 
@@ -669,7 +671,8 @@ func Test_Service_handleBlocksAsync(t *testing.T) {
 
 		extrinsic := types.Extrinsic{21}
 		testHeader := types.NewEmptyHeader()
-		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(extrinsic, testHeader.StateRoot.ToBytes()...)...))
+		externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+			append(extrinsic, testHeader.StateRoot.ToBytes()...)...))
 		vt := transaction.NewValidTransaction(extrinsic, validity)
 
 		block := types.NewBlock(*testHeader, *types.NewBody([]types.Extrinsic{[]byte{21}}))
@@ -1115,7 +1118,8 @@ func TestServiceHandleSubmittedExtrinsic(t *testing.T) {
 	ext := types.Extrinsic{}
 
 	testHeader := types.NewEmptyHeader()
-	externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(ext, testHeader.StateRoot.ToBytes()...)...))
+	externalExt := types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+		append(ext, testHeader.StateRoot.ToBytes()...)...))
 	execTest := func(t *testing.T, s *Service, ext types.Extrinsic, expErr error) {
 		err := s.HandleSubmittedExtrinsic(ext)
 		assert.ErrorIs(t, err, expErr)

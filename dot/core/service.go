@@ -668,6 +668,7 @@ func (s *Service) GetReadProofAt(block common.Hash, keys [][]byte) (
 	return block, proofForKeys, nil
 }
 
+// BuildExternalTransaction builds an external transaction based on the current TransactionQueueAPIVersion
 func (s *Service) BuildExternalTransaction(rt runtime.Instance, ext types.Extrinsic) (types.Extrinsic, error) {
 	runtimeVersion, err := rt.Version()
 	if err != nil {

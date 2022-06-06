@@ -276,8 +276,9 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				setContextStorage: &mockSetContextStorage{trieState: &storage.TrieState{}},
 				version:           &mockVersion{},
 				validateTxn: &mockValidateTxn{
-					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
-					//input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
+					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+						append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
+
 					err: runtime.ErrInvalidTransaction,
 				},
 			},
@@ -326,8 +327,8 @@ func TestServiceHandleTransactionMessage(t *testing.T) {
 				setContextStorage: &mockSetContextStorage{trieState: &storage.TrieState{}},
 				version:           &mockVersion{},
 				validateTxn: &mockValidateTxn{
-					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)}, append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
-					//input:    types.Extrinsic(append([]byte{byte(types.TxnExternal)}, testExtrinsic[0]...)),
+					input: types.Extrinsic(append([]byte{byte(types.TxnExternal)},
+						append(testExtrinsic[0], testEmptyHeader.StateRoot.ToBytes()...)...)),
 					validity: &transaction.Validity{Propagate: true},
 				},
 			},

@@ -6,12 +6,12 @@ package core
 import (
 	"errors"
 	"fmt"
-	"github.com/ChainSafe/gossamer/lib/runtime/storage"
 
 	"github.com/ChainSafe/gossamer/dot/network"
 	"github.com/ChainSafe/gossamer/dot/peerset"
 	"github.com/ChainSafe/gossamer/dot/types"
 	"github.com/ChainSafe/gossamer/lib/runtime"
+	"github.com/ChainSafe/gossamer/lib/runtime/storage"
 	"github.com/ChainSafe/gossamer/lib/transaction"
 
 	"github.com/libp2p/go-libp2p-core/peer"
