@@ -137,7 +137,7 @@ func TestChainSubscriptionRPC(t *testing.T) {
 			method:      "chain_subscribeNewHeads",
 			expected: []interface{}{1,
 				map[string](interface{}){
-					"subscription": float64(1),
+					"subscription": "1",
 					"result": map[string](interface{}){
 						"number":         "0x01",
 						"parentHash":     "0x580d77a9136035a0bc3c3cd86286172f7f81291164c5914266073a30466fba21",
@@ -162,7 +162,7 @@ func TestChainSubscriptionRPC(t *testing.T) {
 			method:      "chain_subscribeFinalizedHeads",
 			expected: []interface{}{1,
 				map[string](interface{}){
-					"subscription": float64(1),
+					"subscription": "1",
 					"result": map[string](interface{}){
 						"number":         "0x01",
 						"parentHash":     "0x580d77a9136035a0bc3c3cd86286172f7f81291164c5914266073a30466fba21",
