@@ -135,7 +135,7 @@ func startGossamer(t *testing.T, node Node, websocket bool) (
 	}
 
 	if websocket {
-		params = append(params, "--ws",
+		params = append(params, "--ws", "--ws-external",
 			"--wsport", node.WSPort)
 	}
 	node.Process = exec.Command(gossamerCMD, params...)
