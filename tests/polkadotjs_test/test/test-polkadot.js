@@ -14,7 +14,6 @@ describe('Testing polkadot.js/api calls:', function () {
         const wsProvider = new WsProvider('ws://127.0.0.1:8546');
         ApiPromise.create({provider: wsProvider}).then( async (a) => {
             api = a;
-            console.log("api set")
 
             do {
                 await sleep(5000);
@@ -29,7 +28,6 @@ describe('Testing polkadot.js/api calls:', function () {
         this.timeout(5000);
 
         if (api == undefined) {
-            console.log("api ahhhh")
             await sleep(2000);
         }
 
@@ -43,23 +41,19 @@ describe('Testing polkadot.js/api calls:', function () {
      });
 
     describe('api constants', () => {
-        console.log("here")
         it('call api.genesisHash', async function () {
-            console.log("a")
             const genesisHash = await api.genesisHash;
             expect(genesisHash).to.be.not.null;
             expect(genesisHash).to.have.lengthOf(32);
         });
 
         it('call api.runtimeMetadata', async function () {
-            console.log("b")
             const runtimeMetadata = await api.runtimeMetadata;
             expect(runtimeMetadata).to.be.not.null;
             expect(runtimeMetadata).to.have.property('magicNumber')
         });
 
         it('call api.runtimeVersion', async function () {
-            console.log("c")
             const runtimeVersion = await api.runtimeVersion;
             expect(runtimeVersion).to.be.not.null;
             expect(runtimeVersion).to.have.property('specName').contains('node')
@@ -67,7 +61,6 @@ describe('Testing polkadot.js/api calls:', function () {
         });
 
         it('call api.libraryInfo', async function () {
-            console.log("d")
             const libraryInfo = await api.libraryInfo;
             expect(libraryInfo).to.be.not.null;
             expect(libraryInfo).to.be.equal('@polkadot/api v4.5.1');
