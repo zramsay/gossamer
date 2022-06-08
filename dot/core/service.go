@@ -414,6 +414,8 @@ func (s *Service) maintainTransactionPool(block *types.Block) {
 	// re-validate transactions in the pool and move them to the queue
 	txs := s.transactionState.PendingInPool()
 	for _, tx := range txs {
+		fmt.Println("in loop")
+		fmt.Println(tx)
 		// get the best block corresponding runtime
 		ts, err := s.storageState.TrieState(nil)
 		if err != nil {
@@ -431,11 +433,13 @@ func (s *Service) maintainTransactionPool(block *types.Block) {
 
 		externalExt, err := s.BuildExternalTransaction(rt, tx.Extrinsic)
 		if err != nil {
+			fmt.Println("errrrr")
 			logger.Errorf("Unable to build transaction \n")
 		}
 
 		txnValidity, err := rt.ValidateTransaction(externalExt)
 		if err != nil {
+			fmt.Println("unable to validate tx")
 			s.transactionState.RemoveExtrinsic(tx.Extrinsic)
 			continue
 		}
@@ -541,15 +545,18 @@ func (s *Service) HandleSubmittedExtrinsic(ext types.Extrinsic) error {
 	}
 
 	rt.SetContextStorage(ts)
+	fmt.Println("got here")
 	// the transaction source is External
 	externalExt, err := s.BuildExternalTransaction(rt, ext)
 	if err != nil {
 		return err
 	}
+	fmt.Println("Build txn")
 	txv, err := rt.ValidateTransaction(externalExt)
 	if err != nil {
 		return err
 	}
+	fmt.Println("validated")
 
 	// add transaction to pool
 	vtx := transaction.NewValidTransaction(ext, txv)
@@ -669,6 +676,7 @@ func (s *Service) GetReadProofAt(block common.Hash, keys [][]byte) (
 }
 
 // BuildExternalTransaction builds an external transaction based on the current TransactionQueueAPIVersion
+// See https://paritytech.github.io/polkadot/src/sp_transaction_pool/runtime_api.rs.html#25-55
 func (s *Service) BuildExternalTransaction(rt runtime.Instance, ext types.Extrinsic) (types.Extrinsic, error) {
 	runtimeVersion, err := rt.Version()
 	if err != nil {

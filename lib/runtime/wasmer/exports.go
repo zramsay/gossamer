@@ -18,10 +18,13 @@ import (
 func (in *Instance) ValidateTransaction(e types.Extrinsic) (*transaction.Validity, error) {
 	ret, err := in.exec(runtime.TaggedTransactionQueueValidateTransaction, e)
 	if err != nil {
+		fmt.Println("err1")
 		return nil, err
 	}
 
 	if ret[0] != 0 {
+		fmt.Println("err2")
+		fmt.Println(ret)
 		return nil, runtime.NewValidateTransactionError(ret)
 	}
 

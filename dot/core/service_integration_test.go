@@ -459,7 +459,7 @@ func TestHandleChainReorg_WithReorg_Transactions(t *testing.T) {
 }
 
 func TestMaintainTransactionPool_EmptyBlock(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	accountInfo := types.AccountInfo{
 		Nonce: 0,
 		Data: types.AccountData{
@@ -490,7 +490,8 @@ func TestMaintainTransactionPool_EmptyBlock(t *testing.T) {
 
 	service := NewTestService(t, cfg)
 	service.transactionState = transactionState
-
+	//err = service.HandleSubmittedExtrinsic(encExt)
+	//require.NoError(t, err)
 	// provides is a list of transaction hashes that depend on this tx, see:
 	// https://github.com/paritytech/substrate/blob/5420de3face1349a97eb954ae71c5b0b940c31de/core/sr-primitives/src/transaction_validity.rs#L195
 	provides := common.MustHexToBytes("0xd43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d00000000")
@@ -516,7 +517,7 @@ func TestMaintainTransactionPool_EmptyBlock(t *testing.T) {
 }
 
 func TestMaintainTransactionPool_BlockWithExtrinsics(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	accountInfo := types.AccountInfo{
 		Nonce: 0,
 		Data: types.AccountData{
@@ -606,7 +607,6 @@ func TestService_HandleSubmittedExtrinsic(t *testing.T) {
 
 	// Tests use old extrinsic version currently
 	err = s.HandleSubmittedExtrinsic(extBytes)
-	//require.Equal(t, errInvalidTransactionQueueVersion, err)
 	require.NoError(t, err)
 }
 
