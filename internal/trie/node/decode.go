@@ -50,6 +50,8 @@ func Decode(reader io.Reader) (n *Node, err error) {
 	}
 }
 
+var ErrInlinedVariantNotSupported = errors.New("inlined variant not supported")
+
 // decodeBranch reads from a reader and decodes to a node branch.
 // Note that since the encoded branch stores the hash of the children nodes, we are not
 // reconstructing the child nodes from the encoding. This function instead stubs where the
@@ -95,22 +97,32 @@ func decodeBranch(reader io.Reader, variant byte, partialKeyLength uint16) (
 		}
 
 		const hashLength = 32
-		childNode := &Node{
-			HashDigest: hash,
-		}
-		if len(hash) < hashLength {
-			// Handle inlined nodes
-			reader = bytes.NewReader(hash)
-			variant, partialKeyLength, err := decodeHeader(reader)
-			if err == nil && variant == leafVariant.bits {
-				childNode, err = decodeLeaf(reader, partialKeyLength)
-				if err != nil {
-					return nil, fmt.Errorf("%w: at index %d: %s",
-						ErrDecodeValue, i, err)
-				}
+		if len(hash) == hashLength {
+			node.Descendants++
+			node.Children[i] = &Node{
+				HashDigest: hash,
 			}
+			continue
 		}
 
+		// Handle inlined nodes
+		reader = bytes.NewReader(hash)
+		variant, partialKeyLength, err := decodeHeader(reader)
+		if err != nil {
+			return nil, fmt.Errorf("malformed inlined node: 0x%x: %w", hash, err)
+		}
+
+		var childNode *Node
+		switch variant {
+		case leafVariant.bits:
+			childNode, err = decodeLeaf(reader, partialKeyLength)
+			if err != nil {
+				return nil, fmt.Errorf("%w: at index %d: %s",
+					ErrDecodeValue, i, err)
+			}
+		default:
+			return nil, fmt.Errorf("%w: %08b", ErrInlinedVariantNotSupported, variant)
+		}
 		node.Descendants++
 		node.Children[i] = childNode
 	}
