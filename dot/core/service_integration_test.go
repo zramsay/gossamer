@@ -131,7 +131,7 @@ func generateTestValidRemarkTxns(t *testing.T, pubKey []byte, accInfo types.Acco
 	//extBytes = append([]byte{txnType}, extBytes...)
 	//extBytes = append([]byte{txnType}, append(extBytes, genesisHeader.Hash().ToBytes()...)...)
 
-	runtime.InitializeRuntimeToTest(t, rt, genesisHeader.Hash())
+	//runtime.InitializeRuntimeToTest(t, rt, genesisHeader.Hash())
 	return extBytes, rt
 }
 
@@ -473,6 +473,7 @@ func TestMaintainTransactionPool_EmptyBlock(t *testing.T) {
 	require.NoError(t, err)
 	alicePub := common.MustHexToBytes(keyring.Alice().Public().Hex())
 	encExt, runtimeInstance := generateTestValidRemarkTxns(t, alicePub, accountInfo)
+
 	cfg := &Config{
 		Runtime: runtimeInstance,
 	}

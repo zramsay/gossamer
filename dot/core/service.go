@@ -440,6 +440,7 @@ func (s *Service) maintainTransactionPool(block *types.Block) {
 		txnValidity, err := rt.ValidateTransaction(externalExt)
 		if err != nil {
 			fmt.Println("unable to validate tx")
+			fmt.Println(err)
 			s.transactionState.RemoveExtrinsic(tx.Extrinsic)
 			continue
 		}
