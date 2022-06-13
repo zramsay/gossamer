@@ -236,7 +236,7 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 	//Result<TransactionValidityResult, APIError>
 	//TransactionValidityResult<TransactionValidity, TransactionValidityError
 
-	validTxn := transaction.Validity{}
+	validTxn := &transaction.Validity{}
 	txnValidityErrResult := scale.NewResult(invalid, unknown)
 	txnValidityResult := scale.NewResult(validTxn, txnValidityErrResult)
 
@@ -249,33 +249,27 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 
 	ok, err := result.Unwrap()
 	if err != nil {
-		fmt.Println("api err case")
 		//TODO implement this
 		// APIError
 		switch err := err.(type) {
 		default:
 			fmt.Println(err)
-			fmt.Println("d")
 			return nil, errInvalidResult
 		}
 	} else {
 		// TxnValidity
-		fmt.Println("txn Validity case")
 		switch o := ok.(type) {
 		case scale.Result:
 			// TxnValidityErr Result
 			txnValidityRes, err := o.Unwrap()
 			if err != nil {
-				fmt.Println("txn validity error case")
 				switch errType := err.(type) {
 
 				// Err wrapping result
 				case scale.WrappedErr:
-					fmt.Println("in wrapped error")
 					errResult := errType.Err.(scale.Result)
 					ok, err = errResult.Unwrap()
 					if err != nil {
-						fmt.Println("unknown case")
 						switch err := err.(type) {
 						case scale.WrappedErr:
 							return nil, determineErrType(err.Err.(scale.VaryingDataType))
@@ -283,23 +277,20 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 							return nil, errInvalidResult
 						}
 					} else {
-						fmt.Println("invalid case")
 						return nil, determineErrType(ok.(scale.VaryingDataType))
 					}
 				default:
-					fmt.Println("b")
 					return nil, errInvalidResult
 				}
 			} else {
 				switch validity := txnValidityRes.(type) {
-				case transaction.Validity:
-					return &validity, nil
+				case *transaction.Validity:
+					return validity, nil
 				default:
 					return nil, errInvalidType
 				}
 			}
 		default:
-			fmt.Println("a")
 			return nil, errInvalidResult
 		}
 	}

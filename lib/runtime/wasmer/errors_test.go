@@ -4,47 +4,48 @@
 package wasmer
 
 import (
-	"fmt"
 	"github.com/ChainSafe/gossamer/lib/transaction"
+	"github.com/ChainSafe/gossamer/pkg/scale"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestApplyExtrinsicErrors(t *testing.T) {
+	testValidity := &transaction.Validity{}
+	encValidity, err := scale.Marshal(testValidity)
+	require.NoError(t, err)
+	validByte := []byte{0, 0}
+	validByte = append(validByte, encValidity...)
 	testCases := []struct {
-		name        string
-		test        []byte
-		expErr      error
-		expvalidity *transaction.Validity
+		name          string
+		test          []byte
+		expErr        error
+		expValidity   *transaction.Validity
+		isValidityErr bool
 	}{
 		{
-			name:   "Valid validity",
+			name:   "lookup failed",
 			test:   []byte{0, 1, 1, 0},
 			expErr: &TransactionValidityError{errLookupFailed},
+		},
+		{
+			name:   "unexpected transaction call",
+			test:   []byte{0, 1, 0, 0},
+			expErr: &TransactionValidityError{errUnexpectedTxCall},
+		},
+		{
+			name:        "valid path",
+			test:        validByte,
+			expValidity: &transaction.Validity{},
 		},
 	}
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			validity, err := decodeValidity(c.test)
-			//if c.expErr == nil {
-			//	require.NoError(t, err)
-			//	return
-			//}
-
-			//if c.test[0] == 0 {
-			//	_, ok := err.(*DispatchOutcomeError)
-			//	require.True(t, ok)
-			//} else {
-			//	_, ok := err.(*TransactionValidityError)
-			//	require.True(t, ok)
-			//}
-			val, ok := err.(*TransactionValidityError)
-			fmt.Println(val)
-			require.True(t, ok)
 			require.Equal(t, c.expErr, err)
-			require.Equal(t, c.expvalidity, validity)
+			require.Equal(t, c.expValidity, validity)
 		})
 	}
 }
