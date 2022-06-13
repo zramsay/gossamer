@@ -3,7 +3,6 @@ package wasmer
 import (
 	"errors"
 	"fmt"
-	"github.com/ChainSafe/gossamer/lib/babe"
 	"github.com/ChainSafe/gossamer/lib/transaction"
 	"github.com/ChainSafe/gossamer/pkg/scale"
 )
@@ -151,21 +150,39 @@ type BadSigner struct{}
 // Index Returns VDT index
 func (err BadSigner) Index() uint { return 10 }
 
+// API Errors
+type FailedToDecodeReturnValue string
+
+func (err FailedToDecodeReturnValue) Index() uint { return 0 }
+
+type FailedToConvertReturnValue string
+
+func (err FailedToConvertReturnValue) Index() uint { return 1 }
+
+type FailedToConvertParameter string
+
+func (err FailedToConvertParameter) Index() uint { return 2 }
+
+type Application string
+
+func (err Application) Index() uint { return 3 }
+
 var (
-	errUnexpectedTxCall         = errors.New("call of the transaction is not expected")
-	errInvalidPayment           = errors.New("invalid payment")
-	errInvalidTransaction       = errors.New("invalid transaction")
-	errOutdatedTransaction      = errors.New("outdated transaction")
-	errBadProof                 = errors.New("bad proof")
-	errAncientBirthBlock        = errors.New("ancient birth block")
-	errExhaustsResources        = errors.New("exhausts resources")
-	errMandatoryDispatchError   = errors.New("mandatory dispatch error")
-	errInvalidMandatoryDispatch = errors.New("invalid mandatory dispatch")
-	errLookupFailed             = errors.New("lookup failed")
-	errValidatorNotFound        = errors.New("validator not found")
-	errBadSigner                = errors.New("invalid signing address")
-	invalidCustom               InvalidCustom
-	unknownCustom               UnknownCustom
+	errUnexpectedTxCall          = errors.New("call of the transaction is not expected")
+	errInvalidPayment            = errors.New("invalid payment")
+	errInvalidTransaction        = errors.New("invalid transaction")
+	errOutdatedTransaction       = errors.New("outdated transaction")
+	errBadProof                  = errors.New("bad proof")
+	errAncientBirthBlock         = errors.New("ancient birth block")
+	errExhaustsResources         = errors.New("exhausts resources")
+	errMandatoryDispatchError    = errors.New("mandatory dispatch error")
+	errInvalidMandatoryDispatch  = errors.New("invalid mandatory dispatch")
+	errLookupFailed              = errors.New("lookup failed")
+	errValidatorNotFound         = errors.New("validator not found")
+	errBadSigner                 = errors.New("invalid signing address")
+	invalidCustom                InvalidCustom
+	unknownCustom                UnknownCustom
+	errFailedToDecodeReturnValue FailedToDecodeReturnValue
 )
 
 func determineErrType(vdt scale.VaryingDataType) error {
@@ -195,14 +212,15 @@ func determineErrType(vdt scale.VaryingDataType) error {
 		return &TransactionValidityError{errBadSigner}
 
 		// UnknownTransaction Error
-	case babe.ValidityCannotLookup:
+	case ValidityCannotLookup:
 		return &TransactionValidityError{errLookupFailed}
-	case babe.NoUnsignedValidator:
+	case NoUnsignedValidator:
 		return &TransactionValidityError{errValidatorNotFound}
-	case babe.UnknownCustom:
+	case UnknownCustom:
 		return &TransactionValidityError{newUnknownError(val)}
 	}
 
+	fmt.Println("Why am i hitting this??")
 	return errInvalidResult
 }
 
@@ -210,7 +228,7 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 	invalid := scale.MustNewVaryingDataType(Call{}, Payment{}, Future{}, Stale{}, BadProof{}, AncientBirthBlock{},
 		ExhaustsResources{}, invalidCustom, BadMandatory{}, MandatoryDispatch{})
 	unknown := scale.MustNewVaryingDataType(ValidityCannotLookup{}, NoUnsignedValidator{}, unknownCustom)
-	apiErr := scale.MustNewVaryingDataType()
+	apiErr := scale.MustNewVaryingDataType(errFailedToDecodeReturnValue)
 
 	//Result<TransactionValidityResult, APIError>
 	//TransactionValidityResult<TransactionValidity, TransactionValidityError
@@ -228,27 +246,49 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 
 	ok, err := result.Unwrap()
 	if err != nil {
+		fmt.Println("api err case")
 		//TODO implement this
 		// APIError
-		switch _ := err.(type) {
-
+		switch err := err.(type) {
 		default:
+			fmt.Println(err)
+			fmt.Println("d")
 			return nil, errInvalidResult
 		}
 	} else {
 		// TxnValidity
+		fmt.Println("txn Validity case")
 		switch o := ok.(type) {
 		case scale.Result:
-			txnValidity, err := o.Unwrap()
+			// TxnValidityErr Result
+			txnValidityRes, err := o.Unwrap()
 			if err != nil {
-				switch err := err.(type) {
+				fmt.Println("txn validity error case")
+				switch errType := err.(type) {
+
+				// Err wrapping result
 				case scale.WrappedErr:
-					return nil, determineErrType(err.Err.(scale.VaryingDataType))
+					fmt.Println("in wrapped error")
+					errResult := errType.Err.(scale.Result)
+					ok, err = errResult.Unwrap()
+					if err != nil {
+						fmt.Println("unknown case")
+						switch err := err.(type) {
+						case scale.WrappedErr:
+							return nil, determineErrType(err.Err.(scale.VaryingDataType))
+						default:
+							return nil, errInvalidResult
+						}
+					} else {
+						fmt.Println("invalid case")
+						return nil, determineErrType(ok.(scale.VaryingDataType))
+					}
 				default:
+					fmt.Println("b")
 					return nil, errInvalidResult
 				}
 			} else {
-				switch validity := txnValidity.(type) {
+				switch validity := txnValidityRes.(type) {
 				case transaction.Validity:
 					return &validity, nil
 				default:
@@ -256,6 +296,7 @@ func decodeValidity(res []byte) (*transaction.Validity, error) {
 				}
 			}
 		default:
+			fmt.Println("a")
 			return nil, errInvalidResult
 		}
 	}
