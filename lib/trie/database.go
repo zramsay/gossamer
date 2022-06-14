@@ -98,7 +98,8 @@ func (t *Trie) LoadFromProof(proofEncodedNodes [][]byte, rootHash []byte) error 
 		decodedNode.Encoding = rawNode
 		decodedNode.HashDigest = nil
 
-		_, hash, err := decodedNode.EncodeAndHash(false)
+		const isRoot = false
+		hash, err := decodedNode.MerkleValue(isRoot)
 		if err != nil {
 			return fmt.Errorf("cannot encode and hash node at index %d: %w", i, err)
 		}
@@ -185,9 +186,10 @@ func (t *Trie) load(db chaindb.Database, n *Node) error {
 		if len(hash) == 0 && child.Type() == node.Leaf {
 			// node has already been loaded inline
 			// just set encoding + hash digest
-			_, _, err := child.EncodeAndHash(false)
+			const isRoot = false
+			_, err := child.MerkleValue(isRoot)
 			if err != nil {
-				return err
+				return fmt.Errorf("merkle value: %w", err)
 			}
 			child.SetDirty(false)
 			continue
@@ -454,7 +456,7 @@ func (t *Trie) getInsertedNodeHashes(n *Node, hashes map[common.Hash]struct{}) (
 		return nil
 	}
 
-	_, hash, err := n.EncodeAndHash(n == t.root)
+	hash, err := n.MerkleValue(n == t.root)
 	if err != nil {
 		return fmt.Errorf(
 			"cannot encode and hash node with hash 0x%x: %w",
