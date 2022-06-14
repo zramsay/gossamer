@@ -12,7 +12,7 @@ import (
 )
 
 // MerkleValue produces the Merkle value from the encoding of a node.
-// For root nodes, the Merkle value is always the Blak2b hash of the encoding.
+// For root nodes, the Merkle value is always the Blake2b hash of the encoding.
 // For other nodes, the Merkle value is either:
 // - the encoding if it is less than 32 bytes
 // - the Blake2b hash of the encoding
